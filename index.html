@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Videx</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Sidebar overlay backdrop -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sort-toggle">
+        <button class="sort-btn active" data-sort="-views">Top</button>
+        <button class="sort-btn" data-sort="-bayesianRating">Rated</button>
+      </div>
+      <button class="sidebar-close" id="sidebarClose" aria-label="Close sidebar">&#10005;</button>
+    </div>
+    <div class="source-tabs">
+      <button class="source-tab active" data-source="porntubeai">PorntubeAI</button>
+      <button class="source-tab" data-source="pmvhaven">PMV Haven</button>
+    </div>
+    <ul class="video-list" id="videoList"></ul>
+  </aside>
+
+  <!-- Floating menu button -->
+  <button class="menu-btn" id="menuBtn" aria-label="Toggle sidebar">
+    <span></span><span></span><span></span>
+  </button>
+
+  <!-- Main layout -->
+  <div class="layout">
+    <main class="main">
+      <section class="player-section">
+        <div class="player-wrapper">
+          <video
+            id="mainPlayer"
+            class="main-video"
+            playsinline
+            preload="metadata"
+          ></video>
+          <div class="player-placeholder" id="playerPlaceholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <polygon points="5,3 19,12 5,21"/>
+            </svg>
+            <p>Select a video to play</p>
+          </div>
+          <!-- Top info overlay -->
+          <div class="video-overlay video-overlay-top" id="videoOverlay">
+            <h1 class="video-title" id="videoTitle"></h1>
+            <div class="video-stats">
+              <span id="videoViews"></span>
+              <span id="videoDuration"></span>
+              <span id="videoDescription"></span>
+              <span id="videoDate"></span>
+            </div>
+          </div>
+          <!-- Bottom nav overlay -->
+          <div class="video-overlay video-overlay-bottom">
+            <button class="nav-btn" id="prevBtn" aria-label="Previous video">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button class="nav-btn" id="nextBtn" aria-label="Next video">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="progress-bar" id="progressBar">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
