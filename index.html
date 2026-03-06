@@ -14,17 +14,26 @@
   <!-- Sidebar -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
-      <div class="sort-toggle">
-        <button class="sort-btn active" data-sort="-views">Top</button>
-        <button class="sort-btn" data-sort="-bayesianRating">Rated</button>
-      </div>
+      <span class="sidebar-title">Videx</span>
       <button class="sidebar-close" id="sidebarClose" aria-label="Close sidebar">&#10005;</button>
     </div>
     <div class="source-tabs">
       <button class="source-tab active" data-source="porntubeai">PorntubeAI</button>
       <button class="source-tab" data-source="pmvhaven">PMV Haven</button>
+      <button class="source-tab" data-source="spankbang">SpankBang</button>
+    </div>
+    <!-- Sort options (API sources) -->
+    <div class="sub-tabs" id="sortToggle">
+      <button class="sub-tab active" data-sort="-views">Top</button>
+      <button class="sub-tab" data-sort="-bayesianRating">Rated</button>
+    </div>
+    <!-- SpankBang sub-tabs (Videos / Related) -->
+    <div class="sub-tabs hidden" id="sbSubTabs">
+      <button class="sub-tab active" data-panel="videos">Videos</button>
+      <button class="sub-tab" data-panel="related">Related</button>
     </div>
     <ul class="video-list" id="videoList"></ul>
+    <ul class="video-list hidden" id="relatedList"></ul>
   </aside>
 
   <!-- Floating menu button -->

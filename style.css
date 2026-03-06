@@ -28,31 +28,31 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-/* ─── Sort toggle ───────────────────────────────────────────────────── */
-.sort-toggle {
+/* ─── Sub-tabs (sort options + SpankBang Videos/Related) ────────────── */
+.sub-tabs {
   display: flex;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  overflow: hidden;
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  background: var(--bg-card);
 }
 
-.sort-btn {
+.sub-tab {
+  flex: 1;
   background: none;
   border: none;
   color: var(--text-muted);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  padding: 5px 12px;
+  padding: 0.5rem 0;
   cursor: pointer;
-  transition: background var(--transition), color var(--transition);
-  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color var(--transition), border-color var(--transition);
 }
-.sort-btn:hover { color: var(--text); }
-.sort-btn.active {
-  background: var(--accent);
-  color: #fff;
+.sub-tab:hover { color: var(--text); }
+.sub-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
 /* ─── Floating menu button ──────────────────────────────────────────── */
@@ -261,10 +261,17 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 0 1rem;
-  height: 52px;
+  height: 48px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
-  gap: 0.75rem;
+}
+
+.sidebar-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .sidebar-close {
@@ -304,6 +311,40 @@ body {
 .source-tab.active {
   color: var(--accent);
   border-bottom-color: var(--accent);
+}
+
+
+/* ─── Hidden utility ────────────────────────────────────────────────── */
+.hidden { display: none !important; }
+
+/* ─── Related playlist item ─────────────────────────────────────────── */
+.related-item {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.625rem 1rem;
+  cursor: pointer;
+  transition: background var(--transition);
+  border-left: 3px solid transparent;
+}
+.related-item:hover { background: var(--bg-hover); }
+
+.related-cover {
+  flex-shrink: 0;
+  width: 80px;
+  height: 50px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 1px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--bg-card);
+}
+.related-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 /* ─── Video list ────────────────────────────────────────────────────── */
