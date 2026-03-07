@@ -1,7 +1,7 @@
 // ─── Config ──────────────────────────────────────────────────────────────────
 const SOURCES = {
-  porntubeai: "https://porntubeai.com/api/videos?page=1&limit=32&sort=",
-  pmvhaven:   "https://pmvhaven.com/api/videos?page=1&limit=32&sort=",
+  porntubeai: "https://porntubeai.com/api/videos?limit=32&sort=",
+  pmvhaven:   "https://pmvhaven.com/api/videos?limit=32&sort=",
 };
 const CORS_PROXY    = "https://corsproxy.io/?url=";
 const SB_SOURCE_URL = "https://spankbang.com/4tx1p/playlist/favorites/";
@@ -16,6 +16,9 @@ let sbCurrentUrl  = SB_SOURCE_URL;
 let sbNextPageUrl = null;
 let sbLoadingMore = false;
 let sbInSearch    = false;
+
+let currentPage    = 1;
+let apiLoadingMore = false;
 
 // ─── DOM refs ────────────────────────────────────────────────────────────────
 const sidebar          = document.getElementById("sidebar");
@@ -134,19 +137,22 @@ async function loadSource() {
   if (currentSource === "spankbang") {
     VIDEOS = await fetchSpankBang(sbCurrentUrl);
   } else {
-    VIDEOS = await fetchVideos();
+    currentPage = 1;
+    VIDEOS = await fetchVideos(1);
   }
   renderList();
 }
 
 // ─── API fetch ────────────────────────────────────────────────────────────────
-async function fetchVideos() {
+async function fetchVideos(page = 1, append = false) {
   try {
-    const res  = await fetch(CORS_PROXY + encodeURIComponent(SOURCES[currentSource] + currentSort));
+    const url  = SOURCES[currentSource] + currentSort + "&page=" + page;
+    const res  = await fetch(CORS_PROXY + encodeURIComponent(url));
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
+    const offset = append ? VIDEOS.length : 0;
     return (json.videos || json.data || []).map((v, i) => ({
-      id:       i + 1,
+      id:       offset + i + 1,
       title:    v.title,
       src:      v.videoUrl,
       thumb:    v.thumbnailUrl,
@@ -158,6 +164,16 @@ async function fetchVideos() {
     console.error("[api] failed:", err);
     return [];
   }
+}
+
+async function loadMoreApiVideos() {
+  if (apiLoadingMore) return [];
+  apiLoadingMore = true;
+  const newItems = await fetchVideos(++currentPage, true);
+  VIDEOS.push(...newItems);
+  newItems.forEach((v) => videoList.appendChild(makeVideoItem(v)));
+  apiLoadingMore = false;
+  return newItems;
 }
 
 // ─── SpankBang: fetch & scrape playlist ──────────────────────────────────────
@@ -257,9 +273,13 @@ function parseSpankBangVideoSrc(html) {
 
 // ─── Infinite scroll: load next SpankBang page ───────────────────────────────
 videoList.addEventListener("scroll", () => {
-  if (currentSource !== "spankbang" || !sbNextPageUrl || sbLoadingMore) return;
   const { scrollTop, scrollHeight, clientHeight } = videoList;
-  if (scrollHeight - scrollTop - clientHeight < 200) loadMoreSpankBang();
+  if (scrollHeight - scrollTop - clientHeight >= 200) return;
+  if (currentSource === "spankbang") {
+    if (sbNextPageUrl && !sbLoadingMore) loadMoreSpankBang();
+  } else {
+    if (!apiLoadingMore) loadMoreApiVideos();
+  }
 });
 
 async function loadMoreSpankBang() {
@@ -311,13 +331,15 @@ async function loadVideo(id) {
     let html;
     try {
       const res = await fetch(pageUrl);
+      if (!res.ok) { if (id < VIDEOS.length) loadVideo(id + 1); return; }
       html = await res.text();
     } catch (err) {
       console.error("[sb] video page fetch failed:", err);
+      if (id < VIDEOS.length) loadVideo(id + 1);
       return;
     }
     videoSrc = parseSpankBangVideoSrc(html);
-    if (!videoSrc) { console.warn("[sb] no video src found"); return; }
+    if (!videoSrc) { if (id < VIDEOS.length) loadVideo(id + 1); return; }
 
     // Scrape and show related playlists in the Related panel
     const doc     = new DOMParser().parseFromString(html, "text/html");
@@ -339,14 +361,20 @@ async function loadVideo(id) {
   videoDescription.textContent = v.uploader ? `by ${v.uploader}` : "";
 
   prevBtn.disabled = v.id <= 1;
-  nextBtn.disabled = v.id >= VIDEOS.length;
+  nextBtn.disabled = currentSource === "spankbang" && v.id >= VIDEOS.length;
   history.replaceState(null, "", "?source=" + currentSource + "#" + v.id);
   renderList();
   closeSidebar();
 }
 
 prevBtn.addEventListener("click", () => { if (currentId > 1) loadVideo(currentId - 1); });
-nextBtn.addEventListener("click", () => { if (currentId < VIDEOS.length) loadVideo(currentId + 1); });
+nextBtn.addEventListener("click", () => {
+  if (currentId < VIDEOS.length) {
+    loadVideo(currentId + 1);
+  } else if (currentSource !== "spankbang") {
+    loadMoreApiVideos().then((items) => { if (items.length) loadVideo(currentId + 1); });
+  }
+});
 
 // ─── Progress bar ─────────────────────────────────────────────────────────────
 mainPlayer.addEventListener("timeupdate", () => {
@@ -361,7 +389,16 @@ progressBar.addEventListener("click", (e) => {
 
 // ─── Auto-play next ───────────────────────────────────────────────────────────
 mainPlayer.addEventListener("ended", () => {
-  if (currentId < VIDEOS.length) loadVideo(currentId + 1);
+  if (currentId < VIDEOS.length) {
+    loadVideo(currentId + 1);
+  } else if (currentSource !== "spankbang") {
+    loadMoreApiVideos().then((items) => { if (items.length) loadVideo(currentId + 1); });
+  }
+});
+
+// ─── Skip on video error (404, unsupported, etc.) ────────────────────────────
+mainPlayer.addEventListener("error", () => {
+  if (currentId != null && currentId < VIDEOS.length) loadVideo(currentId + 1);
 });
 
 // ─── Scroll to seek ───────────────────────────────────────────────────────────
@@ -380,9 +417,10 @@ document.querySelectorAll("#sortToggle .sub-tab").forEach((btn) => {
     currentSort = btn.dataset.sort;
     document.querySelectorAll("#sortToggle .sub-tab").forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
+    currentPage = 1;
     VIDEOS = [];
     renderList();
-    fetchVideos().then((videos) => { VIDEOS = videos; renderList(); });
+    fetchVideos(1).then((videos) => { VIDEOS = videos; renderList(); });
   });
 });
 
