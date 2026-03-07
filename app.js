@@ -15,6 +15,7 @@ let currentId     = null;
 let sbCurrentUrl  = SB_SOURCE_URL;
 let sbNextPageUrl = null;
 let sbLoadingMore = false;
+let sbInSearch    = false;
 
 // ─── DOM refs ────────────────────────────────────────────────────────────────
 const sidebar          = document.getElementById("sidebar");
@@ -23,6 +24,9 @@ const sidebarClose     = document.getElementById("sidebarClose");
 const menuBtn          = document.getElementById("menuBtn");
 const sortToggle       = document.getElementById("sortToggle");
 const sbSubTabs        = document.getElementById("sbSubTabs");
+const sbSearchBar      = document.getElementById("sbSearchBar");
+const sbSearchInput    = document.getElementById("sbSearchInput");
+const sbSearchBtn      = document.getElementById("sbSearchBtn");
 const videoList        = document.getElementById("videoList");
 const relatedList      = document.getElementById("relatedList");
 const mainPlayer       = document.getElementById("mainPlayer");
@@ -64,6 +68,7 @@ document.querySelectorAll(".source-tab").forEach((tab) => {
     currentId     = null;
     sbCurrentUrl  = SB_SOURCE_URL;
     sbNextPageUrl = null;
+    sbInSearch    = false;
     VIDEOS        = [];
 
     const isSb = source === "spankbang";
@@ -82,12 +87,46 @@ function switchSbPanel(panel) {
   document.querySelectorAll("#sbSubTabs .sub-tab").forEach((t) =>
     t.classList.toggle("active", t.dataset.panel === panel)
   );
-  videoList.classList.toggle("hidden", panel !== "videos");
+  const isSearch = panel === "search";
+  sbSearchBar.classList.toggle("hidden", !isSearch);
+  videoList.classList.toggle("hidden", panel === "related");
   relatedList.classList.toggle("hidden", panel !== "related");
+
+  if (panel === "videos" && sbInSearch) {
+    sbInSearch    = false;
+    sbCurrentUrl  = SB_SOURCE_URL;
+    sbNextPageUrl = null;
+    VIDEOS        = [];
+    renderList();
+    fetchSpankBang(sbCurrentUrl).then((items) => { VIDEOS = items; renderList(); });
+  }
+  if (isSearch && !sbInSearch) {
+    // clear list so it doesn't show playlist items in search panel
+    videoList.innerHTML = `<li style="padding:1.5rem 1rem;color:var(--text-muted);font-size:.85rem;text-align:center;">Enter a query above to search</li>`;
+  }
 }
 
 document.querySelectorAll("#sbSubTabs .sub-tab").forEach((tab) => {
   tab.addEventListener("click", () => switchSbPanel(tab.dataset.panel));
+});
+
+// ─── SpankBang search ────────────────────────────────────────────────────────
+async function performSbSearch(query) {
+  query = query.trim();
+  if (!query) return;
+  sbInSearch    = true;
+  sbNextPageUrl = null;
+  VIDEOS        = [];
+  videoList.innerHTML = `<li style="padding:1rem;color:var(--text-muted);font-size:.85rem;">Searching…</li>`;
+  const url   = `https://spankbang.com/s/${encodeURIComponent(query)}/`;
+  const items = await fetchSpankBang(url);
+  VIDEOS = items;
+  renderList();
+}
+
+sbSearchBtn.addEventListener("click", () => performSbSearch(sbSearchInput.value));
+sbSearchInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") performSbSearch(sbSearchInput.value);
 });
 
 // ─── Load source ─────────────────────────────────────────────────────────────

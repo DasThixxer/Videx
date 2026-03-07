@@ -317,6 +317,47 @@ body {
 /* ─── Hidden utility ────────────────────────────────────────────────── */
 .hidden { display: none !important; }
 
+/* ─── SpankBang search bar ──────────────────────────────────────────── */
+.sb-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--bg-card);
+}
+.sb-search-bar input {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.85rem;
+  padding: 0 0.65rem;
+  outline: none;
+  transition: border-color var(--transition);
+}
+.sb-search-bar input:focus { border-color: var(--accent); }
+.sb-search-bar input::placeholder { color: var(--text-muted); }
+.sb-search-bar button {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition);
+}
+.sb-search-bar button:hover { background: var(--accent-dim); }
+.sb-search-bar button svg { width: 16px; height: 16px; stroke: #fff; }
+
 /* ─── Related playlist item ─────────────────────────────────────────── */
 .related-item {
   display: flex;

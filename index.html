@@ -27,10 +27,17 @@
       <button class="sub-tab active" data-sort="-views">Top</button>
       <button class="sub-tab" data-sort="-bayesianRating">Rated</button>
     </div>
-    <!-- SpankBang sub-tabs (Videos / Related) -->
+    <!-- SpankBang sub-tabs (Videos / Related / Search) -->
     <div class="sub-tabs hidden" id="sbSubTabs">
       <button class="sub-tab active" data-panel="videos">Videos</button>
       <button class="sub-tab" data-panel="related">Related</button>
+      <button class="sub-tab" data-panel="search">Search</button>
+    </div>
+    <div class="sb-search-bar hidden" id="sbSearchBar">
+      <input type="text" id="sbSearchInput" placeholder="Search SpankBang…" autocomplete="off" />
+      <button id="sbSearchBtn" aria-label="Search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
     </div>
     <ul class="video-list" id="videoList"></ul>
     <ul class="video-list hidden" id="relatedList"></ul>
