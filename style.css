@@ -47,6 +47,11 @@ body {
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
   z-index: 200;
+  transition: width var(--transition);
+}
+.left-nav.collapsed {
+  width: 0;
+  border-right: none;
 }
 
 .left-nav-header {
@@ -67,7 +72,7 @@ body {
 }
 
 .nav-close-btn {
-  display: none;
+  display: flex;
   background: none;
   border: none;
   color: var(--text-muted);
@@ -187,7 +192,7 @@ body {
 
 /* ─── Mobile hamburger button ───────────────────────────────────────── */
 .menu-btn {
-  display: none;
+  display: none; /* shown on mobile always, and on desktop only when nav is collapsed */
   position: fixed;
   top: 12px;
   left: 12px;
@@ -492,6 +497,7 @@ body {
   padding: 0.75rem 1rem 3rem;
   background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%);
 }
+.video-title { pointer-events: auto; }
 
 .video-overlay-bottom {
   bottom: 0;
@@ -750,11 +756,11 @@ body {
 /* ─── Mobile: left nav as overlay, hamburger visible ────────────────── */
 @media (max-width: 768px) {
   .menu-btn { display: flex; }
-  .nav-close-btn { display: flex; }
 
   .left-nav {
     position: fixed;
     top: 0; left: 0; bottom: 0;
+    width: var(--left-nav-w) !important;
     transform: translateX(-100%);
     transition: transform var(--transition);
     z-index: 200;
@@ -778,6 +784,34 @@ body {
     padding: 0.75rem;
   }
 }
+
+/* ─── Desktop: show hamburger only when left nav is collapsed ───────── */
+@media (min-width: 769px) {
+  body.left-nav-collapsed .menu-btn { display: flex; }
+}
+
+/* ─── Right sidebar show tab ────────────────────────────────────────── */
+.sidebar-show-btn {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 300;
+  width: 20px;
+  height: 48px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-right: none;
+  border-radius: var(--radius) 0 0 var(--radius);
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition), background var(--transition);
+}
+.sidebar-show-btn:hover { color: var(--text); background: var(--bg-hover); }
+.sidebar-show-btn svg { width: 12px; height: 12px; }
 
 /* ─── Wider screens ─────────────────────────────────────────────────── */
 @media (min-width: 1200px) {

@@ -27,6 +27,7 @@ let sbInSearch    = false;
 
 let currentPage    = 1;
 let apiLoadingMore = false;
+let restoringHistory = false;
 
 // ─── DOM refs ────────────────────────────────────────────────────────────────
 const leftNav          = document.getElementById("leftNav");
@@ -44,6 +45,7 @@ const playerView       = document.getElementById("playerView");
 const videoList        = document.getElementById("videoList");
 const rightSidebar        = document.getElementById("rightSidebar");
 const rightSidebarClose   = document.getElementById("rightSidebarClose");
+const sidebarShowBtn      = document.getElementById("sidebarShowBtn");
 const playlistList        = document.getElementById("playlistList");
 const relatedVideosList   = document.getElementById("relatedVideosList");
 const relatedPlaylistsList = document.getElementById("relatedPlaylistsList");
@@ -60,7 +62,7 @@ const prevBtn          = document.getElementById("prevBtn");
 const nextBtn          = document.getElementById("nextBtn");
 const backBtn          = document.getElementById("backBtn");
 
-// ─── Left nav mobile toggle ───────────────────────────────────────────────────
+// ─── Left nav toggle ──────────────────────────────────────────────────────────
 function openNav() {
   leftNav.classList.add("open");
   navBackdrop.classList.add("active");
@@ -71,8 +73,22 @@ function closeNav() {
   navBackdrop.classList.remove("active");
 }
 
-menuBtn.addEventListener("click", openNav);
-navCloseBtn.addEventListener("click", closeNav);
+function isMobile() { return window.innerWidth <= 768; }
+
+menuBtn.addEventListener("click", () => {
+  if (isMobile()) openNav();
+  else {
+    leftNav.classList.remove("collapsed");
+    document.body.classList.remove("left-nav-collapsed");
+  }
+});
+navCloseBtn.addEventListener("click", () => {
+  if (isMobile()) closeNav();
+  else {
+    leftNav.classList.add("collapsed");
+    document.body.classList.add("left-nav-collapsed");
+  }
+});
 navBackdrop.addEventListener("click", closeNav);
 
 // ─── Player show / hide ───────────────────────────────────────────────────────
@@ -81,12 +97,14 @@ function openPlayer() {
   playerView.classList.remove("hidden");
   rightSidebar.classList.remove("hidden");
   rightSidebar.classList.toggle("sb-source", currentSource === "spankbang");
+  sidebarShowBtn.classList.add("hidden");
   switchSidebarTab("playlist");
 }
 
 function closePlayer() {
   playerView.classList.add("hidden");
   rightSidebar.classList.add("hidden");
+  sidebarShowBtn.classList.add("hidden");
   browseView.classList.remove("hidden");
   mainPlayer.pause();
   currentId = null;
@@ -102,8 +120,15 @@ mainPlayer.addEventListener("click", () => {
   else mainPlayer.pause();
 });
 
-backBtn.addEventListener("click", closePlayer);
-rightSidebarClose.addEventListener("click", closePlayer);
+backBtn.addEventListener("click", () => history.back());
+rightSidebarClose.addEventListener("click", () => {
+  rightSidebar.classList.add("hidden");
+  sidebarShowBtn.classList.remove("hidden");
+});
+sidebarShowBtn.addEventListener("click", () => {
+  rightSidebar.classList.remove("hidden");
+  sidebarShowBtn.classList.add("hidden");
+});
 
 // ─── Right sidebar tab switching ──────────────────────────────────────────────
 function switchSidebarTab(tab) {
@@ -144,7 +169,7 @@ document.querySelectorAll(".source-btn").forEach((btn) => {
     // Return to browse if player is open
     if (playerView.classList.contains("hidden") === false) closePlayer();
 
-    history.replaceState(null, "", "?source=" + source);
+    if (!restoringHistory) history.pushState(null, "", "?source=" + source);
     renderList();
     loadSource();
     closeNav();
@@ -213,7 +238,7 @@ async function openApiPlaylist(sortId, title) {
   videoList.innerHTML = `<li style="grid-column:1/-1;padding:2rem 1rem;color:var(--text-muted);font-size:.85rem;text-align:center;">Loading…</li>`;
   VIDEOS = await fetchVideos(1);
   renderList();
-  history.replaceState(null, "", "?source=" + currentSource + "&playlist=" + encodeURIComponent(sortId));
+  if (!restoringHistory) history.pushState(null, "", "?source=" + currentSource + "&playlist=" + encodeURIComponent(sortId));
 }
 
 // ─── API fetch ────────────────────────────────────────────────────────────────
@@ -318,7 +343,7 @@ async function openPlaylist(href, title) {
   const items = await fetchSpankBang(href);
   VIDEOS = items;
   renderList();
-  history.replaceState(null, "", "?source=spankbang&playlist=" + encodeURIComponent(href));
+  if (!restoringHistory) history.pushState(null, "", "?source=spankbang&playlist=" + encodeURIComponent(href));
 }
 
 // ─── Back to playlists (both SB and API sources) ─────────────────────────────
@@ -330,15 +355,15 @@ function goBackToPlaylists() {
     sbInSearch    = false;
     sbNextPageUrl = null;
     renderPlaylists();
-    history.replaceState(null, "", "?source=spankbang");
+    if (!restoringHistory) history.pushState(null, "", "?source=spankbang");
   } else {
     apiMode = "playlists";
     renderApiPlaylists();
-    history.replaceState(null, "", "?source=" + currentSource);
+    if (!restoringHistory) history.pushState(null, "", "?source=" + currentSource);
   }
 }
 
-sbBackBtn.addEventListener("click", goBackToPlaylists);
+sbBackBtn.addEventListener("click", () => history.back());
 
 // ─── SpankBang: fetch & scrape video list from playlist page ─────────────────
 async function fetchSpankBang(url, append = false) {
@@ -392,20 +417,20 @@ function parseSpankBangVideoSrc(html) {
 
 // ─── SpankBang: scrape related videos from video page ────────────────────────
 function scrapeRelatedVideos(doc) {
-  // Try several selector patterns SpankBang uses across page types
-  const nodes = doc.querySelectorAll(
-    '[data-testid="video-item"], .video-item, .video-list li, li.video, .related-videos [href*="/video/"]'
-  );
+  const nodes = doc.querySelectorAll(".js-related-videos-right [data-testid='video-item']");
   return Array.from(nodes).map((node) => {
-    const a   = node.tagName === "A" ? node : node.querySelector("a[href]");
-    const img = node.querySelector("img");
-    const src = a?.getAttribute("href") || "";
+    const a        = node.querySelector("a[href]");
+    const titleA   = node.querySelector("a[title]");
+    const img      = node.querySelector("img");
+    const duration = node.querySelector("[data-testid='video-item-length']");
+    const src      = a?.getAttribute("href") || "";
     return {
-      title: a?.getAttribute("title") || img?.getAttribute("alt") || "Video",
+      title:    titleA?.getAttribute("title") || img?.getAttribute("alt") || "Video",
       src,
-      thumb: img?.getAttribute("src") || img?.getAttribute("data-src") || "",
+      thumb:    img?.getAttribute("src") || img?.getAttribute("data-src") || "",
+      duration: duration?.textContent?.trim() || "",
     };
-  }).filter((v) => v.src && (v.src.includes("/v/") || v.src.match(/^\/[a-z0-9]+\/$/)));
+  }).filter((v) => v.src.includes("/video/"));
 }
 
 // ─── SpankBang: scrape related playlists from video page ─────────────────────
@@ -500,7 +525,8 @@ async function playExternalVideo(v) {
   placeholder.classList.add("hidden");
   document.querySelectorAll(".video-overlay").forEach((el) => el.classList.add("visible"));
 
-  videoTitle.textContent       = v.title;
+  videoTitle.textContent = v.title;
+  videoTitle.href        = pageUrl;
   videoViews.textContent       = "";
   videoDuration.textContent    = "";
   videoDescription.textContent = "";
@@ -511,7 +537,7 @@ async function playExternalVideo(v) {
   currentId = null;
   const plParam2 = sbCurrentUrl !== SB_PLAYLISTS_URL
     ? "&playlist=" + encodeURIComponent(sbCurrentUrl) : "";
-  history.replaceState(null, "", "?source=spankbang&v=" + encodeURIComponent(v.src) + plParam2);
+  if (!restoringHistory) history.pushState(null, "", "?source=spankbang&v=" + encodeURIComponent(v.src) + plParam2);
   document.querySelectorAll(".playlist-item").forEach((el) => el.classList.remove("active"));
 }
 
@@ -641,7 +667,10 @@ async function loadVideo(id) {
   placeholder.classList.add("hidden");
   document.querySelectorAll(".video-overlay").forEach((el) => el.classList.add("visible"));
 
-  videoTitle.textContent       = v.title;
+  videoTitle.textContent = v.title;
+  videoTitle.href        = currentSource === "spankbang"
+    ? new URL(v.src, "https://spankbang.com").href
+    : v.src;
   videoViews.textContent       = v.views ? `${v.views} views` : "";
   videoDate.textContent        = "";
   videoDuration.textContent    = v.duration;
@@ -654,7 +683,7 @@ async function loadVideo(id) {
     plParam = "&playlist=" + encodeURIComponent(sbCurrentUrl);
   else if (currentSource !== "spankbang" && apiMode === "videos")
     plParam = "&playlist=" + encodeURIComponent(currentSort);
-  history.replaceState(null, "", "?source=" + currentSource + "&v=" + encodeURIComponent(videoSlug(v)) + plParam);
+  if (!restoringHistory) history.pushState(null, "", "?source=" + currentSource + "&v=" + encodeURIComponent(videoSlug(v)) + plParam);
 
   // Refresh active state in both lists
   document.querySelectorAll(".video-card").forEach((el) =>
@@ -714,41 +743,120 @@ mainPlayer.addEventListener("wheel", (e) => {
     Math.max(0, mainPlayer.currentTime + (e.deltaY > 0 ? step : -step)));
 }, { passive: false });
 
-// ─── Init ─────────────────────────────────────────────────────────────────────
-(function init() {
-  const params       = new URLSearchParams(location.search);
-  const savedSource  = ["porntubeai", "pmvhaven", "spankbang"].includes(params.get("source"))
+// ─── Restore UI from current URL (used by init and popstate) ─────────────────
+async function restoreFromUrl() {
+  const params        = new URLSearchParams(location.search);
+  const newSource     = ["porntubeai", "pmvhaven", "spankbang"].includes(params.get("source"))
     ? params.get("source") : "porntubeai";
-  const savedVideo   = params.get("v") || null;
+  const savedVideo    = params.get("v") || null;
   const savedPlaylist = params.get("playlist") || null;
+
+  // Handle source change
+  if (newSource !== currentSource) {
+    currentSource = newSource;
+    currentId     = null;
+    sbCurrentUrl  = SB_PLAYLISTS_URL;
+    sbNextPageUrl = null;
+    sbInSearch    = false;
+    sbMode        = "playlists";
+    SB_PLAYLISTS  = [];
+    VIDEOS        = [];
+    apiMode       = "playlists";
+    document.querySelectorAll(".source-btn").forEach((b) =>
+      b.classList.toggle("active", b.dataset.source === newSource)
+    );
+    sbSearchBar.classList.toggle("hidden", newSource !== "spankbang");
+    browseHeader.classList.add("hidden");
+    if (!playerView.classList.contains("hidden")) {
+      playerView.classList.add("hidden");
+      rightSidebar.classList.add("hidden");
+      browseView.classList.remove("hidden");
+      mainPlayer.pause();
+      currentId = null;
+    }
+    await loadSource();
+  }
+
+  // Restore playlist context if needed
+  if (savedPlaylist) {
+    if (newSource === "spankbang") {
+      if (sbCurrentUrl !== savedPlaylist || sbMode !== "videos") {
+        const title = savedPlaylist.replace(/\/$/, "").split("/").pop().replace(/-/g, " ");
+        await openPlaylist(savedPlaylist, title);
+      }
+    } else {
+      if (currentSort !== savedPlaylist || apiMode !== "videos") {
+        const pl = API_PLAYLISTS.find((p) => p.id === savedPlaylist);
+        if (pl) await openApiPlaylist(pl.id, pl.title);
+      }
+    }
+  } else if (!savedVideo) {
+    // No playlist, no video → restore root
+    if (newSource === "spankbang" && sbMode !== "playlists") {
+      sbMode        = "playlists";
+      sbInSearch    = false;
+      sbNextPageUrl = null;
+      sbCurrentUrl  = SB_PLAYLISTS_URL;
+      if (SB_PLAYLISTS.length === 0) {
+        SB_PLAYLISTS = await fetchSbPlaylists(SB_PLAYLISTS_URL);
+      }
+      renderPlaylists();
+    } else if (newSource !== "spankbang" && apiMode !== "playlists") {
+      apiMode = "playlists";
+      renderApiPlaylists();
+    }
+  }
+
+  // Close player if no video
+  if (!savedVideo) {
+    if (!playerView.classList.contains("hidden")) {
+      playerView.classList.add("hidden");
+      rightSidebar.classList.add("hidden");
+      browseView.classList.remove("hidden");
+      mainPlayer.pause();
+      currentId = null;
+      relatedVideosList.innerHTML    = "";
+      relatedPlaylistsList.innerHTML = "";
+      switchSidebarTab("playlist");
+    }
+    return;
+  }
+
+  // Restore video
+  if (newSource === "spankbang") {
+    const match = VIDEOS.find((v) => v.src === savedVideo);
+    if (match) loadVideo(match.id);
+    else playExternalVideo({ src: savedVideo, title: "", thumb: "" });
+  } else {
+    const match = VIDEOS.find((v) => videoSlug(v) === savedVideo);
+    if (match) loadVideo(match.id);
+  }
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+(async function init() {
+  restoringHistory = true;
+  const params      = new URLSearchParams(location.search);
+  const savedSource = ["porntubeai", "pmvhaven", "spankbang"].includes(params.get("source"))
+    ? params.get("source") : "porntubeai";
 
   currentSource = savedSource;
   document.querySelectorAll(".source-btn").forEach((b) =>
     b.classList.toggle("active", b.dataset.source === savedSource)
   );
-
   sbSearchBar.classList.toggle("hidden", savedSource !== "spankbang");
 
-  loadSource().then(async () => {
-    // Restore playlist/sort context
-    if (savedPlaylist) {
-      if (savedSource === "spankbang") {
-        const title = savedPlaylist.replace(/\/$/, "").split("/").pop().replace(/-/g, " ");
-        await openPlaylist(savedPlaylist, title);
-      } else {
-        const pl = API_PLAYLISTS.find((p) => p.id === savedPlaylist);
-        if (pl) await openApiPlaylist(pl.id, pl.title);
-      }
-    }
-    // Restore video
-    if (!savedVideo) return;
-    if (savedSource === "spankbang") {
-      const match = VIDEOS.find((v) => v.src === savedVideo);
-      if (match) loadVideo(match.id);
-      else playExternalVideo({ src: savedVideo, title: "", thumb: "" });
-    } else {
-      const match = VIDEOS.find((v) => videoSlug(v) === savedVideo);
-      if (match) loadVideo(match.id);
-    }
-  });
+  await loadSource();
+  await restoreFromUrl();
+  restoringHistory = false;
 })();
+
+// ─── Browser history navigation ───────────────────────────────────────────────
+window.addEventListener("popstate", async () => {
+  restoringHistory = true;
+  try {
+    await restoreFromUrl();
+  } finally {
+    restoringHistory = false;
+  }
+});

@@ -70,7 +70,7 @@
         </div>
         <!-- Top info overlay -->
         <div class="video-overlay video-overlay-top" id="videoOverlay">
-          <h1 class="video-title" id="videoTitle"></h1>
+          <a class="video-title" id="videoTitle" target="_blank" rel="noopener noreferrer"></a>
           <div class="video-stats">
             <span id="videoViews"></span>
             <span id="videoDuration"></span>
@@ -108,6 +108,11 @@
     <ul class="sidebar-list" id="relatedVideosList" data-tab="related-videos"></ul>
     <ul class="sidebar-list" id="relatedPlaylistsList" data-tab="related-playlists"></ul>
   </aside>
+
+  <!-- Right sidebar re-open tab (visible when sidebar is hidden during playback) -->
+  <button class="sidebar-show-btn hidden" id="sidebarShowBtn" aria-label="Show sidebar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+  </button>
 
   <!-- Progress bar -->
   <div class="progress-bar" id="progressBar">
