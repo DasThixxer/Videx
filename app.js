@@ -3,7 +3,7 @@ const SOURCES = {
   porntubeai: "https://porntubeai.com/api/videos?limit=32&sort=",
   pmvhaven:   "https://pmvhaven.com/api/videos?limit=32&sort=",
 };
-const CORS_PROXY        = "https://corsproxy.io/?url=";
+const CORS_PROXY = "https://dasthixxer--ca079a1a1fd511f18ce442dde27851f2.web.val.run/?url=";
 const SB_PLAYLISTS_URL  = "https://spankbang.com/profile/das.thixxer/playlists";
 
 const API_PLAYLISTS = [
@@ -42,44 +42,40 @@ const sbSearchInput    = document.getElementById("sbSearchInput");
 const sbSearchBtn      = document.getElementById("sbSearchBtn");
 const browseView       = document.getElementById("browseView");
 const playerView       = document.getElementById("playerView");
-const videoList        = document.getElementById("videoList");
-const rightSidebar        = document.getElementById("rightSidebar");
-const rightSidebarClose   = document.getElementById("rightSidebarClose");
-const sidebarShowBtn      = document.getElementById("sidebarShowBtn");
-const playlistList        = document.getElementById("playlistList");
-const relatedVideosList   = document.getElementById("relatedVideosList");
-const relatedPlaylistsList = document.getElementById("relatedPlaylistsList");
-const mainPlayer       = document.getElementById("mainPlayer");
 const placeholder      = document.getElementById("playerPlaceholder");
+const mainPlayer       = document.getElementById("mainPlayer");
+const progressBar      = document.getElementById("progressBar");
+const progressFill     = document.getElementById("progressFill");
+const videoList        = document.getElementById("videoList");
+const playlistList     = document.getElementById("playlistList");
 const videoTitle       = document.getElementById("videoTitle");
 const videoViews       = document.getElementById("videoViews");
 const videoDate        = document.getElementById("videoDate");
 const videoDuration    = document.getElementById("videoDuration");
 const videoDescription = document.getElementById("videoDescription");
-const progressBar      = document.getElementById("progressBar");
-const progressFill     = document.getElementById("progressFill");
 const prevBtn          = document.getElementById("prevBtn");
 const nextBtn          = document.getElementById("nextBtn");
 const backBtn          = document.getElementById("backBtn");
+const rightSidebar     = document.getElementById("rightSidebar");
+const rightSidebarClose = document.getElementById("rightSidebarClose");
+const sidebarShowBtn   = document.getElementById("sidebarShowBtn");
+const relatedVideosList    = document.getElementById("relatedVideosList");
+const relatedPlaylistsList = document.getElementById("relatedPlaylistsList");
 
-// ─── Left nav toggle ──────────────────────────────────────────────────────────
-function openNav() {
-  leftNav.classList.add("open");
-  navBackdrop.classList.add("active");
-}
-
+// ─── Nav ──────────────────────────────────────────────────────────────────────
+function isMobile() { return window.innerWidth < 768; }
 function closeNav() {
   leftNav.classList.remove("open");
-  navBackdrop.classList.remove("active");
+  navBackdrop.classList.remove("visible");
 }
 
-function isMobile() { return window.innerWidth <= 768; }
-
 menuBtn.addEventListener("click", () => {
-  if (isMobile()) openNav();
-  else {
-    leftNav.classList.remove("collapsed");
-    document.body.classList.remove("left-nav-collapsed");
+  if (isMobile()) {
+    leftNav.classList.add("open");
+    navBackdrop.classList.add("visible");
+  } else {
+    leftNav.classList.toggle("collapsed");
+    document.body.classList.toggle("left-nav-collapsed");
   }
 });
 navCloseBtn.addEventListener("click", () => {
@@ -114,7 +110,6 @@ function closePlayer() {
   renderList();
 }
 
-// ─── Click video to toggle pause ─────────────────────────────────────────────
 mainPlayer.addEventListener("click", () => {
   if (mainPlayer.paused) mainPlayer.play().catch(() => {});
   else mainPlayer.pause();
@@ -166,7 +161,6 @@ document.querySelectorAll(".source-btn").forEach((btn) => {
     browseHeader.classList.add("hidden");
     apiMode = "playlists";
 
-    // Return to browse if player is open
     if (playerView.classList.contains("hidden") === false) closePlayer();
 
     if (!restoringHistory) history.pushState(null, "", "?source=" + source);
@@ -174,28 +168,6 @@ document.querySelectorAll(".source-btn").forEach((btn) => {
     loadSource();
     closeNav();
   });
-});
-
-// ─── SpankBang search ────────────────────────────────────────────────────────
-async function performSbSearch(query) {
-  query = query.trim();
-  if (!query) return;
-  sbInSearch    = true;
-  sbMode        = "videos";
-  sbNextPageUrl = null;
-  VIDEOS        = [];
-  browseHeader.classList.remove("hidden");
-  browseHeaderTitle.textContent = `Search: "${query}"`;
-  videoList.innerHTML = `<li style="grid-column:1/-1;padding:1.5rem 1rem;color:var(--text-muted);font-size:.85rem;text-align:center;">Searching…</li>`;
-  const url   = `https://spankbang.com/s/${encodeURIComponent(query)}/`;
-  const items = await fetchSpankBang(url);
-  VIDEOS = items;
-  renderList();
-}
-
-sbSearchBtn.addEventListener("click", () => performSbSearch(sbSearchInput.value));
-sbSearchInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") performSbSearch(sbSearchInput.value);
 });
 
 // ─── Load source ─────────────────────────────────────────────────────────────
@@ -215,7 +187,8 @@ function renderApiPlaylists() {
   videoList.innerHTML  = "";
   playlistList.innerHTML = "";
   browseHeader.classList.add("hidden");
-  API_PLAYLISTS.forEach((pl) => {
+  const playlists = currentSource === "pmvhaven" ? PMVH_PLAYLISTS : API_PLAYLISTS;
+  playlists.forEach((pl) => {
     const li = document.createElement("li");
     li.className = "sort-card";
     li.innerHTML = `
@@ -241,11 +214,29 @@ async function openApiPlaylist(sortId, title) {
   if (!restoringHistory) history.pushState(null, "", "?source=" + currentSource + "&playlist=" + encodeURIComponent(sortId));
 }
 
+// ─── Back to playlists (both SB and API sources) ─────────────────────────────
+function goBackToPlaylists() {
+  VIDEOS        = [];
+  browseView.scrollTop = 0;
+  if (currentSource === "spankbang") {
+    sbMode        = "playlists";
+    sbInSearch    = false;
+    sbNextPageUrl = null;
+    renderPlaylists();
+    if (!restoringHistory) history.pushState(null, "", "?source=spankbang");
+  } else {
+    apiMode = "playlists";
+    renderApiPlaylists();
+    if (!restoringHistory) history.pushState(null, "", "?source=" + currentSource);
+  }
+}
+
 // ─── API fetch ────────────────────────────────────────────────────────────────
 async function fetchVideos(page = 1, append = false) {
   try {
-    const url  = SOURCES[currentSource] + currentSort + "&page=" + page;
-    const res  = await fetch(CORS_PROXY + encodeURIComponent(url));
+    const url   = SOURCES[currentSource] + currentSort + "&page=" + page;
+    const proxy = CORS_PROXY;
+    const res   = await fetch(proxy + encodeURIComponent(url));
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
     const offset = append ? VIDEOS.length : 0;
@@ -277,270 +268,6 @@ async function loadMoreApiVideos() {
   return newItems;
 }
 
-// ─── SpankBang: fetch playlists from profile page ────────────────────────────
-async function fetchSbPlaylists(url) {
-  try {
-    const res  = await fetch(url);
-    const html = await res.text();
-    const doc  = new DOMParser().parseFromString(html, "text/html");
-
-    // Try multiple selectors SpankBang uses for playlist items
-    const nodes = doc.querySelectorAll(
-      "a[data-testid='playlist-item'], a.playlist-item, .playlist-list a[href], li.playlist-item a[href]"
-    );
-
-    return Array.from(nodes).map((a) => {
-      const imgs  = Array.from(a.querySelectorAll("img")).slice(0, 4)
-        .map((img) => img.getAttribute("src") || img.getAttribute("data-src") || "");
-      const inf   = a.querySelector("p.inf, .title, h3, p");
-      const title = inf?.textContent?.trim() || a.getAttribute("title") || "Untitled";
-      const href  = new URL(a.getAttribute("href") || "", "https://spankbang.com").href;
-      return { title, href, imgs };
-    }).filter((p) => p.href !== "https://spankbang.com/" && p.href.includes("/playlist/"));
-  } catch (err) {
-    console.error("[sb] playlists fetch failed:", err);
-    return [];
-  }
-}
-
-// ─── SpankBang: render playlists grid ────────────────────────────────────────
-function renderPlaylists() {
-  videoList.innerHTML = "";
-  playlistList.innerHTML = "";
-  browseHeader.classList.add("hidden");
-
-  if (SB_PLAYLISTS.length === 0) {
-    videoList.innerHTML = `<li style="grid-column:1/-1;padding:2rem 1rem;color:var(--text-muted);font-size:.85rem;text-align:center;">No playlists found</li>`;
-    return;
-  }
-  SB_PLAYLISTS.forEach((pl) => {
-    const li = document.createElement("li");
-    li.className = "playlist-card";
-    const coverClass = pl.imgs.length <= 1 ? "playlist-card-cover single" : "playlist-card-cover";
-    li.innerHTML = `
-      <div class="${coverClass}">
-        ${pl.imgs.map((src) => `<img src="${src}" alt="" loading="lazy" />`).join("")}
-      </div>
-      <div class="playlist-card-info">
-        <div class="playlist-card-title">${pl.title}</div>
-      </div>
-    `;
-    li.addEventListener("click", () => openPlaylist(pl.href, pl.title));
-    videoList.appendChild(li);
-  });
-}
-
-// ─── SpankBang: drill into a playlist ────────────────────────────────────────
-async function openPlaylist(href, title) {
-  sbMode        = "videos";
-  sbCurrentUrl  = href;
-  sbNextPageUrl = null;
-  sbInSearch    = false;
-  VIDEOS        = [];
-  browseHeader.classList.remove("hidden");
-  browseHeaderTitle.textContent = title;
-  videoList.innerHTML = `<li style="grid-column:1/-1;padding:2rem 1rem;color:var(--text-muted);font-size:.85rem;text-align:center;">Loading…</li>`;
-  const items = await fetchSpankBang(href);
-  VIDEOS = items;
-  renderList();
-  if (!restoringHistory) history.pushState(null, "", "?source=spankbang&playlist=" + encodeURIComponent(href));
-}
-
-// ─── Back to playlists (both SB and API sources) ─────────────────────────────
-function goBackToPlaylists() {
-  VIDEOS        = [];
-  browseView.scrollTop = 0;
-  if (currentSource === "spankbang") {
-    sbMode        = "playlists";
-    sbInSearch    = false;
-    sbNextPageUrl = null;
-    renderPlaylists();
-    if (!restoringHistory) history.pushState(null, "", "?source=spankbang");
-  } else {
-    apiMode = "playlists";
-    renderApiPlaylists();
-    if (!restoringHistory) history.pushState(null, "", "?source=" + currentSource);
-  }
-}
-
-sbBackBtn.addEventListener("click", () => history.back());
-
-// ─── SpankBang: fetch & scrape video list from playlist page ─────────────────
-async function fetchSpankBang(url, append = false) {
-  try {
-    const res  = await fetch(url);
-    const html = await res.text();
-    const doc  = new DOMParser().parseFromString(html, "text/html");
-
-    const root  = doc.querySelector('[data-testid="main"]') ?? doc;
-    const nodes = root.querySelectorAll('[data-testid="video-item"]');
-
-    const nextEl  = doc.querySelector(".pagination li.next a[href]");
-    sbNextPageUrl = nextEl
-      ? new URL(nextEl.getAttribute("href"), "https://spankbang.com").href
-      : null;
-
-    const offset = append ? VIDEOS.length : 0;
-    return Array.from(nodes).map((node, i) => {
-      const a   = node.querySelector("a");
-      const img = node.querySelector("img");
-      return {
-        id:       offset + i + 1,
-        title:    a?.getAttribute("title") || img?.getAttribute("alt") || `Video ${offset + i + 1}`,
-        src:      a?.getAttribute("href") || "",
-        thumb:    img?.getAttribute("src") || img?.getAttribute("data-src") || "",
-        duration: "",
-        views:    "",
-        uploader: "",
-      };
-    });
-  } catch (err) {
-    console.error("[sb] fetch failed:", err);
-    return [];
-  }
-}
-
-// ─── SpankBang: extract direct video URL from video page ─────────────────────
-function parseSpankBangVideoSrc(html) {
-  const doc = new DOMParser().parseFromString(html, "text/html");
-  const tag = doc.querySelector("video[src], video source[src]");
-  if (tag) return tag.getAttribute("src");
-
-  const urlPattern = /https?:\/\/[^\s"'\\]+\.(mp4|m3u8|webm)[^\s"'\\]*/gi;
-  for (const s of doc.querySelectorAll("script:not([src])")) {
-    const m = s.textContent.match(urlPattern);
-    if (m) return m[0];
-  }
-  const m = html.match(urlPattern);
-  return m ? m[0] : null;
-}
-
-// ─── SpankBang: scrape related videos from video page ────────────────────────
-function scrapeRelatedVideos(doc) {
-  const nodes = doc.querySelectorAll(".js-related-videos-right [data-testid='video-item']");
-  return Array.from(nodes).map((node) => {
-    const a        = node.querySelector("a[href]");
-    const titleA   = node.querySelector("a[title]");
-    const img      = node.querySelector("img");
-    const duration = node.querySelector("[data-testid='video-item-length']");
-    const src      = a?.getAttribute("href") || "";
-    return {
-      title:    titleA?.getAttribute("title") || img?.getAttribute("alt") || "Video",
-      src,
-      thumb:    img?.getAttribute("src") || img?.getAttribute("data-src") || "",
-      duration: duration?.textContent?.trim() || "",
-    };
-  }).filter((v) => v.src.includes("/video/"));
-}
-
-// ─── SpankBang: scrape related playlists from video page ─────────────────────
-function scrapeRelatedPlaylists(doc) {
-  const nodes = doc.querySelectorAll(
-    "a[data-testid='playlist-item'], a.playlist-item, [class*='playlist'] a[href*='/playlist/'], a[href*='/playlist/']"
-  );
-  return Array.from(nodes).map((a) => {
-    const imgs  = Array.from(a.querySelectorAll("img")).slice(0, 4)
-      .map((img) => img.getAttribute("src") || img.getAttribute("data-src") || "");
-    const inf   = a.querySelector("p.inf, .title, p, span");
-    const title = inf?.textContent?.trim() || a.getAttribute("title") || a.textContent?.trim() || "Playlist";
-    const href  = new URL(a.getAttribute("href") || "", "https://spankbang.com").href;
-    return { title, href, imgs };
-  }).filter((p) => p.href.includes("/playlist/") && p.href !== "https://spankbang.com/");
-}
-
-// ─── Render related videos in right sidebar ───────────────────────────────────
-function renderRelatedVideos(items) {
-  relatedVideosList.innerHTML = "";
-  if (items.length === 0) {
-    relatedVideosList.innerHTML = `<li class="sidebar-empty">None found</li>`;
-    return;
-  }
-  items.forEach((v) => {
-    const li = document.createElement("li");
-    li.className = "playlist-item";
-    li.innerHTML = `
-      <div class="playlist-thumb">
-        ${v.thumb ? `<img src="${v.thumb}" alt="" loading="lazy" />` : ""}
-      </div>
-      <div class="playlist-info">
-        <div class="playlist-item-title">${v.title}</div>
-      </div>
-    `;
-    li.addEventListener("click", () => playExternalVideo(v));
-    relatedVideosList.appendChild(li);
-  });
-}
-
-// ─── Render related playlists in right sidebar ────────────────────────────────
-function renderRelatedPlaylists(items) {
-  relatedPlaylistsList.innerHTML = "";
-  if (items.length === 0) {
-    relatedPlaylistsList.innerHTML = `<li class="sidebar-empty">None found</li>`;
-    return;
-  }
-  items.forEach((pl) => {
-    const li = document.createElement("li");
-    li.className = "playlist-item";
-    const coverClass = "sidebar-cover" + (pl.imgs.length <= 1 ? " single" : "");
-    li.innerHTML = `
-      <div class="${coverClass}">
-        ${pl.imgs.map((src) => `<img src="${src}" alt="" loading="lazy" />`).join("")}
-      </div>
-      <div class="playlist-info">
-        <div class="playlist-item-title">${pl.title}</div>
-      </div>
-    `;
-    li.addEventListener("click", () => { closePlayer(); openPlaylist(pl.href, pl.title); });
-    relatedPlaylistsList.appendChild(li);
-  });
-}
-
-// ─── Play a related video (not in VIDEOS array) ───────────────────────────────
-async function playExternalVideo(v) {
-  if (!v.src) return;
-  const pageUrl = new URL(v.src, "https://spankbang.com").href;
-  let html;
-  try {
-    const res = await fetch(pageUrl);
-    if (!res.ok) return;
-    html = await res.text();
-  } catch { return; }
-
-  const videoSrc = parseSpankBangVideoSrc(html);
-  if (!videoSrc) return;
-
-  const doc = new DOMParser().parseFromString(html, "text/html");
-  renderRelatedVideos(scrapeRelatedVideos(doc));
-  renderRelatedPlaylists(scrapeRelatedPlaylists(doc));
-
-  // Try to pull title/thumb from the page if not provided
-  if (!v.title) v.title = doc.querySelector("h1")?.textContent?.trim() || "";
-  if (!v.thumb) v.thumb = doc.querySelector('meta[property="og:image"]')?.getAttribute("content") || "";
-
-  mainPlayer.src    = videoSrc;
-  mainPlayer.poster = v.thumb;
-  mainPlayer.load();
-  mainPlayer.play().catch(() => {});
-  if (playerView.classList.contains("hidden")) openPlayer();
-  placeholder.classList.add("hidden");
-  document.querySelectorAll(".video-overlay").forEach((el) => el.classList.add("visible"));
-
-  videoTitle.textContent = v.title;
-  videoTitle.href        = pageUrl;
-  videoViews.textContent       = "";
-  videoDuration.textContent    = "";
-  videoDescription.textContent = "";
-  videoDate.textContent        = "";
-
-  prevBtn.disabled = true;
-  nextBtn.disabled = true;
-  currentId = null;
-  const plParam2 = sbCurrentUrl !== SB_PLAYLISTS_URL
-    ? "&playlist=" + encodeURIComponent(sbCurrentUrl) : "";
-  if (!restoringHistory) history.pushState(null, "", "?source=spankbang&v=" + encodeURIComponent(v.src) + plParam2);
-  document.querySelectorAll(".playlist-item").forEach((el) => el.classList.remove("active"));
-}
-
 // ─── Infinite scroll ──────────────────────────────────────────────────────────
 browseView.addEventListener("scroll", () => {
   const { scrollTop, scrollHeight, clientHeight } = browseView;
@@ -551,17 +278,6 @@ browseView.addEventListener("scroll", () => {
     if (apiMode === "videos" && !apiLoadingMore) loadMoreApiVideos();
   }
 });
-
-async function loadMoreSpankBang() {
-  sbLoadingMore = true;
-  const newItems = await fetchSpankBang(sbNextPageUrl, true);
-  VIDEOS.push(...newItems);
-  newItems.forEach((v) => {
-    videoList.appendChild(makeGridCard(v));
-    playlistList.appendChild(makePlaylistItem(v));
-  });
-  sbLoadingMore = false;
-}
 
 // ─── Render: grid card (browse view) ─────────────────────────────────────────
 function makeGridCard(v) {
@@ -617,9 +333,7 @@ function renderList() {
 
 // ─── Build a URL-friendly segment for the currently playing video ────────────
 function videoSlug(v) {
-  // SB: v.src is already a path like "/abc123/video-title/"
-  if (v.src && v.src.startsWith("/")) return v.src;
-  // API sources: derive a readable slug from the title
+  if (v.src && v.src.startsWith("/")) return v.src; // SB path
   return "/" + v.title.toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
@@ -685,7 +399,6 @@ async function loadVideo(id) {
     plParam = "&playlist=" + encodeURIComponent(currentSort);
   if (!restoringHistory) history.pushState(null, "", "?source=" + currentSource + "&v=" + encodeURIComponent(videoSlug(v)) + plParam);
 
-  // Refresh active state in both lists
   document.querySelectorAll(".video-card").forEach((el) =>
     el.classList.toggle("active", +el.dataset.id === id)
   );
@@ -693,7 +406,6 @@ async function loadVideo(id) {
     el.classList.toggle("active", +el.dataset.id === id)
   );
 
-  // Scroll active playlist item into view
   const activePl = playlistList.querySelector(".playlist-item.active");
   if (activePl) activePl.scrollIntoView({ block: "nearest" });
 
@@ -751,7 +463,6 @@ async function restoreFromUrl() {
   const savedVideo    = params.get("v") || null;
   const savedPlaylist = params.get("playlist") || null;
 
-  // Handle source change
   if (newSource !== currentSource) {
     currentSource = newSource;
     currentId     = null;
@@ -777,7 +488,6 @@ async function restoreFromUrl() {
     await loadSource();
   }
 
-  // Restore playlist context if needed
   if (savedPlaylist) {
     if (newSource === "spankbang") {
       if (sbCurrentUrl !== savedPlaylist || sbMode !== "videos") {
@@ -786,12 +496,12 @@ async function restoreFromUrl() {
       }
     } else {
       if (currentSort !== savedPlaylist || apiMode !== "videos") {
-        const pl = API_PLAYLISTS.find((p) => p.id === savedPlaylist);
+        const playlists = newSource === "pmvhaven" ? PMVH_PLAYLISTS : API_PLAYLISTS;
+        const pl = playlists.find((p) => p.id === savedPlaylist);
         if (pl) await openApiPlaylist(pl.id, pl.title);
       }
     }
   } else if (!savedVideo) {
-    // No playlist, no video → restore root
     if (newSource === "spankbang" && sbMode !== "playlists") {
       sbMode        = "playlists";
       sbInSearch    = false;
@@ -807,7 +517,6 @@ async function restoreFromUrl() {
     }
   }
 
-  // Close player if no video
   if (!savedVideo) {
     if (!playerView.classList.contains("hidden")) {
       playerView.classList.add("hidden");
@@ -822,7 +531,6 @@ async function restoreFromUrl() {
     return;
   }
 
-  // Restore video
   if (newSource === "spankbang") {
     const match = VIDEOS.find((v) => v.src === savedVideo);
     if (match) loadVideo(match.id);

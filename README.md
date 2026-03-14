@@ -58,3 +58,24 @@ If the API does not include `Access-Control-Allow-Origin` headers, wrap the fetc
 const CORS_PROXY = "https://corsproxy.io/?url=";
 fetch(CORS_PROXY + encodeURIComponent(url));
 ```
+
+## Proxy notes
+
+Different sources may require different proxies depending on Cloudflare WAF rules and geo-blocking:
+
+| Source | Proxy | Reason |
+|---|---|---|
+| All sources | Val.town HTTP val | Free, permanent, and not blocked by any source's Cloudflare WAF |
+
+**Val.town proxy:**
+- Stored as `CORS_PROXY` in `app.js`
+- PMVHaven blocks all major cloud IPs (Vercel, Netlify, CF Workers) with a Cloudflare JS challenge — Val.town IPs bypass it
+- If the val is ever lost, redeploy the handler from `proxies/val-proxy.js` at [val.town](https://val.town) as an HTTP val and update `CORS_PROXY` in `app.js`
+
+**Proxies that were tested and failed for PMVHaven:**
+- Vercel — 403 (Cloudflare JS challenge)
+- Netlify — 403 (UK geo-block on their edge nodes)
+- Cloudflare Workers — UK geo-block (PMVHaven blocks UK IPs site-wide)
+- Railway — works but requires paid plan after 30 days
+- `corsproxy.io` — works locally only (paid for non-localhost origins)
+- `allorigins.win` — works but very slow

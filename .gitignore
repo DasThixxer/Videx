@@ -1,0 +1,4 @@
+# Local deployment tool caches
+.vercel
+.netlify
+.wrangler
