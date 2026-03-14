@@ -30,10 +30,10 @@ async function fetchSbPlaylists(url) {
     const doc  = new DOMParser().parseFromString(html, "text/html");
 
     const nodes = doc.querySelectorAll(
-      "a[data-testid='playlist-item'], a.playlist-item, .playlist-list a[href], li.playlist-item a[href]"
+      "a[data-testid='playlist-item'], a.playlist-item, .playlist-list a[href], li.playlist-item a[href], a[href*='/playlist/']"
     );
 
-    return Array.from(nodes).map((a) => {
+    const results = Array.from(nodes).map((a) => {
       const imgs  = Array.from(a.querySelectorAll("img")).slice(0, 4)
         .map((img) => img.getAttribute("src") || img.getAttribute("data-src") || "");
       const inf   = a.querySelector("p.inf, .title, h3, p");
@@ -41,6 +41,7 @@ async function fetchSbPlaylists(url) {
       const href  = new URL(a.getAttribute("href") || "", "https://spankbang.com").href;
       return { title, href, imgs };
     }).filter((p) => p.href !== "https://spankbang.com/" && p.href.includes("/playlist/"));
+    return results;
   } catch (err) {
     console.error("[sb] playlists fetch failed:", err);
     return [];
@@ -111,7 +112,8 @@ async function fetchSpankBang(url, append = false) {
       const titleA   = node.querySelector("a[title]");
       const img      = node.querySelector("img");
       const duration = node.querySelector("[data-testid='video-item-length']");
-      const src      = a?.getAttribute("href") || "";
+      const src = a?.getAttribute("href") || "";
+
       return {
         id:       offset + i + 1,
         title:    titleA?.getAttribute("title") || img?.getAttribute("alt") || "Video",
@@ -121,7 +123,7 @@ async function fetchSpankBang(url, append = false) {
         views:    "",
         uploader: "",
       };
-    }).filter((v) => v.src.includes("/video/"));
+    }).filter((v) => v.src.startsWith("/"));
   } catch (err) {
     console.error("[sb] fetch failed:", err);
     return [];

@@ -3,7 +3,8 @@ const SOURCES = {
   porntubeai: "https://porntubeai.com/api/videos?limit=32&sort=",
   pmvhaven:   "https://pmvhaven.com/api/videos?limit=32&sort=",
 };
-const CORS_PROXY = "https://api.codetabs.com/v1/proxy?quest=";
+const CORS_PROXY    = "https://api.codetabs.com/v1/proxy?quest=";
+const SB_CORS_PROXY = "https://corsproxy.io/?";
 const SB_PLAYLISTS_URL  = "https://spankbang.com/profile/das.thixxer/playlists";
 
 const API_PLAYLISTS = [
@@ -91,9 +92,9 @@ navBackdrop.addEventListener("click", closeNav);
 function openPlayer() {
   browseView.classList.add("hidden");
   playerView.classList.remove("hidden");
-  rightSidebar.classList.remove("hidden");
+  rightSidebar.classList.add("hidden");
   rightSidebar.classList.toggle("sb-source", currentSource === "spankbang");
-  sidebarShowBtn.classList.add("hidden");
+  sidebarShowBtn.classList.remove("hidden");
   switchSidebarTab("playlist");
 }
 
@@ -331,13 +332,34 @@ function renderList() {
   });
 }
 
-// ─── Build a URL-friendly segment for the currently playing video ────────────
-function videoSlug(v) {
-  if (v.src && v.src.startsWith("/")) return v.src; // SB path
-  return "/" + v.title.toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 80);
+// ─── Sync active highlights in grid and playlist sidebar ──────────────────────
+function syncActiveItems() {
+  document.querySelectorAll(".video-card").forEach((el) =>
+    el.classList.toggle("active", +el.dataset.id === currentId)
+  );
+  document.querySelectorAll(".playlist-item").forEach((el) =>
+    el.classList.toggle("active", +el.dataset.id === currentId)
+  );
+}
+
+// ─── Play an API video directly from its URL (before playlist is loaded) ──────
+function playDirectApiVideo(url) {
+  mainPlayer.src    = url;
+  mainPlayer.poster = "";
+  mainPlayer.load();
+  mainPlayer.play().catch(() => {});
+  placeholder.classList.add("hidden");
+  document.querySelectorAll(".video-overlay").forEach((el) => el.classList.add("visible"));
+  videoTitle.textContent       = "";
+  videoTitle.href              = url;
+  videoViews.textContent       = "";
+  videoDate.textContent        = "";
+  videoDuration.textContent    = "";
+  videoDescription.textContent = "";
+  prevBtn.disabled = true;
+  nextBtn.disabled = true;
+  currentId = null;
+  openPlayer();
 }
 
 // ─── Load a video ─────────────────────────────────────────────────────────────
@@ -356,15 +378,14 @@ async function loadVideo(id) {
     let html;
     try {
       const res = await fetch(pageUrl);
-      if (!res.ok) { if (id < VIDEOS.length) loadVideo(id + 1); return; }
+      if (!res.ok) return;
       html = await res.text();
     } catch (err) {
       console.error("[sb] video page fetch failed:", err);
-      if (id < VIDEOS.length) loadVideo(id + 1);
       return;
     }
     videoSrc = parseSpankBangVideoSrc(html);
-    if (!videoSrc) { if (id < VIDEOS.length) loadVideo(id + 1); return; }
+    if (!videoSrc) return;
 
     const doc = new DOMParser().parseFromString(html, "text/html");
     renderRelatedVideos(scrapeRelatedVideos(doc));
@@ -397,14 +418,9 @@ async function loadVideo(id) {
     plParam = "&playlist=" + encodeURIComponent(sbCurrentUrl);
   else if (currentSource !== "spankbang" && apiMode === "videos")
     plParam = "&playlist=" + encodeURIComponent(currentSort);
-  if (!restoringHistory) history.pushState(null, "", "?source=" + currentSource + "&v=" + encodeURIComponent(videoSlug(v)) + plParam);
+  if (!restoringHistory) history.pushState(null, "", "?source=" + currentSource + "&v=" + encodeURIComponent(v.src) + plParam);
 
-  document.querySelectorAll(".video-card").forEach((el) =>
-    el.classList.toggle("active", +el.dataset.id === id)
-  );
-  document.querySelectorAll(".playlist-item").forEach((el) =>
-    el.classList.toggle("active", +el.dataset.id === id)
-  );
+  syncActiveItems();
 
   const activePl = playlistList.querySelector(".playlist-item.active");
   if (activePl) activePl.scrollIntoView({ block: "nearest" });
@@ -441,10 +457,6 @@ mainPlayer.addEventListener("ended", () => {
   }
 });
 
-// ─── Skip on video error ──────────────────────────────────────────────────────
-mainPlayer.addEventListener("error", () => {
-  if (currentId != null && currentId < VIDEOS.length) loadVideo(currentId + 1);
-});
 
 // ─── Scroll to seek ───────────────────────────────────────────────────────────
 mainPlayer.addEventListener("wheel", (e) => {
@@ -463,6 +475,7 @@ async function restoreFromUrl() {
   const savedVideo    = params.get("v") || null;
   const savedPlaylist = params.get("playlist") || null;
 
+  // ── Switch source if it changed ────────────────────────────────────────────
   if (newSource !== currentSource) {
     currentSource = newSource;
     currentId     = null;
@@ -488,35 +501,7 @@ async function restoreFromUrl() {
     await loadSource();
   }
 
-  if (savedPlaylist) {
-    if (newSource === "spankbang") {
-      if (sbCurrentUrl !== savedPlaylist || sbMode !== "videos") {
-        const title = savedPlaylist.replace(/\/$/, "").split("/").pop().replace(/-/g, " ");
-        await openPlaylist(savedPlaylist, title);
-      }
-    } else {
-      if (currentSort !== savedPlaylist || apiMode !== "videos") {
-        const playlists = newSource === "pmvhaven" ? PMVH_PLAYLISTS : API_PLAYLISTS;
-        const pl = playlists.find((p) => p.id === savedPlaylist);
-        if (pl) await openApiPlaylist(pl.id, pl.title);
-      }
-    }
-  } else if (!savedVideo) {
-    if (newSource === "spankbang" && sbMode !== "playlists") {
-      sbMode        = "playlists";
-      sbInSearch    = false;
-      sbNextPageUrl = null;
-      sbCurrentUrl  = SB_PLAYLISTS_URL;
-      if (SB_PLAYLISTS.length === 0) {
-        SB_PLAYLISTS = await fetchSbPlaylists(SB_PLAYLISTS_URL);
-      }
-      renderPlaylists();
-    } else if (newSource !== "spankbang" && apiMode !== "playlists") {
-      apiMode = "playlists";
-      renderApiPlaylists();
-    }
-  }
-
+  // ── No video in URL → close player, show playlist or source home ───────────
   if (!savedVideo) {
     if (!playerView.classList.contains("hidden")) {
       playerView.classList.add("hidden");
@@ -528,16 +513,94 @@ async function restoreFromUrl() {
       relatedPlaylistsList.innerHTML = "";
       switchSidebarTab("playlist");
     }
+    if (savedPlaylist) {
+      if (newSource === "spankbang") {
+        if (sbCurrentUrl !== savedPlaylist || sbMode !== "videos") {
+          const title = savedPlaylist.replace(/\/$/, "").split("/").pop().replace(/-/g, " ");
+          await openPlaylist(savedPlaylist, title);
+        }
+      } else {
+        if (currentSort !== savedPlaylist || apiMode !== "videos") {
+          const playlists = newSource === "pmvhaven" ? PMVH_PLAYLISTS : API_PLAYLISTS;
+          const pl = playlists.find((p) => p.id === savedPlaylist);
+          if (pl) await openApiPlaylist(pl.id, pl.title);
+        }
+      }
+    } else {
+      if (newSource === "spankbang" && sbMode !== "playlists") {
+        sbMode        = "playlists";
+        sbInSearch    = false;
+        sbNextPageUrl = null;
+        sbCurrentUrl  = SB_PLAYLISTS_URL;
+        if (SB_PLAYLISTS.length === 0) SB_PLAYLISTS = await fetchSbPlaylists(SB_PLAYLISTS_URL);
+        renderPlaylists();
+      } else if (newSource !== "spankbang" && apiMode !== "playlists") {
+        apiMode = "playlists";
+        renderApiPlaylists();
+      }
+    }
     return;
   }
 
+  // ── Video in URL ────────────────────────────────────────────────────────────
+  // If already in VIDEOS (e.g. popstate within same playlist), just play it
+  const existingMatch = VIDEOS.find((v) => v.src === savedVideo);
+  if (existingMatch) {
+    loadVideo(existingMatch.id);
+    return;
+  }
+
+  // Start video immediately and load playlist in parallel
   if (newSource === "spankbang") {
+    // Fire off SB video page fetch without awaiting — runs while playlist loads
+    const playProm = playExternalVideo({ src: savedVideo, title: "", thumb: "" });
+
+    if (savedPlaylist && (sbCurrentUrl !== savedPlaylist || sbMode !== "videos")) {
+      const title = savedPlaylist.replace(/\/$/, "").split("/").pop().replace(/-/g, " ");
+      await openPlaylist(savedPlaylist, title);
+    }
+
+    await playProm;
+
+    // After both complete, find the video in the playlist and set currentId
     const match = VIDEOS.find((v) => v.src === savedVideo);
-    if (match) loadVideo(match.id);
-    else playExternalVideo({ src: savedVideo, title: "", thumb: "" });
+    if (match) {
+      currentId        = match.id;
+      prevBtn.disabled = match.id <= 1;
+      nextBtn.disabled = match.id >= VIDEOS.length;
+    }
   } else {
-    const match = VIDEOS.find((v) => videoSlug(v) === savedVideo);
-    if (match) loadVideo(match.id);
+    // API source: we have the direct URL — start playing immediately
+    playDirectApiVideo(savedVideo);
+
+    // Load playlist while video is already playing
+    if (savedPlaylist) {
+      const playlists = newSource === "pmvhaven" ? PMVH_PLAYLISTS : API_PLAYLISTS;
+      const pl = playlists.find((p) => p.id === savedPlaylist);
+      if (pl && (currentSort !== savedPlaylist || apiMode !== "videos")) {
+        await openApiPlaylist(pl.id, pl.title);
+      }
+    }
+
+    // Find video in loaded playlist and update metadata
+    const match = VIDEOS.find((v) => v.src === savedVideo);
+    if (match) {
+      currentId                    = match.id;
+      videoTitle.textContent       = match.title;
+      videoTitle.href              = match.src;
+      videoViews.textContent       = match.views ? `${match.views} views` : "";
+      videoDuration.textContent    = match.duration;
+      videoDescription.textContent = match.uploader ? `by ${match.uploader}` : "";
+      prevBtn.disabled             = match.id <= 1;
+      nextBtn.disabled             = false;
+    }
+  }
+
+  // Highlight the active item in grid and sidebar
+  if (currentId !== null) {
+    syncActiveItems();
+    const activePl = playlistList.querySelector(".playlist-item.active");
+    if (activePl) activePl.scrollIntoView({ block: "nearest" });
   }
 }
 
