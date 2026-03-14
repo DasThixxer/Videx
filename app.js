@@ -3,7 +3,7 @@ const SOURCES = {
   porntubeai: "https://porntubeai.com/api/videos?limit=32&sort=",
   pmvhaven:   "https://pmvhaven.com/api/videos?limit=32&sort=",
 };
-const CORS_PROXY = "https://dasthixxer--ca079a1a1fd511f18ce442dde27851f2.web.val.run/?url=";
+const CORS_PROXY = "https://api.codetabs.com/v1/proxy?quest=";
 const SB_PLAYLISTS_URL  = "https://spankbang.com/profile/das.thixxer/playlists";
 
 const API_PLAYLISTS = [
