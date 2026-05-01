@@ -2,13 +2,13 @@
 async function performSbSearch(query) {
   query = query.trim();
   if (!query) return;
-  sbInSearch    = true;
-  sbMode        = "videos";
-  sbNextPageUrl = null;
-  VIDEOS        = [];
-  browseHeader.classList.remove("hidden");
-  browseHeaderTitle.textContent = `Search: "${query}"`;
+  sbInSearch           = true;
+  sbMode               = "videos";
+  sbNextPageUrl        = null;
+  VIDEOS               = [];
+  currentPlaylistTitle = `"${query}"`;
   videoList.innerHTML = `<li style="grid-column:1/-1;padding:1.5rem 1rem;color:var(--text-muted);font-size:.85rem;text-align:center;">Searching…</li>`;
+  renderBreadcrumbs();
   const url   = `https://spankbang.com/s/${encodeURIComponent(query)}/`;
   const items = await fetchSpankBang(url);
   VIDEOS = items;
@@ -19,8 +19,6 @@ sbSearchBtn.addEventListener("click", () => performSbSearch(sbSearchInput.value)
 sbSearchInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") performSbSearch(sbSearchInput.value);
 });
-
-sbBackBtn.addEventListener("click", () => history.back());
 
 // ─── SpankBang: fetch playlists from profile page ────────────────────────────
 async function fetchSbPlaylists(url) {
@@ -52,7 +50,6 @@ async function fetchSbPlaylists(url) {
 function renderPlaylists() {
   videoList.innerHTML = "";
   playlistList.innerHTML = "";
-  browseHeader.classList.add("hidden");
 
   if (SB_PLAYLISTS.length === 0) {
     videoList.innerHTML = `<li style="grid-column:1/-1;padding:2rem 1rem;color:var(--text-muted);font-size:.85rem;text-align:center;">No playlists found</li>`;
@@ -77,14 +74,14 @@ function renderPlaylists() {
 
 // ─── SpankBang: drill into a playlist ────────────────────────────────────────
 async function openPlaylist(href, title) {
-  sbMode        = "videos";
-  sbCurrentUrl  = href;
-  sbNextPageUrl = null;
-  sbInSearch    = false;
-  VIDEOS        = [];
-  browseHeader.classList.remove("hidden");
-  browseHeaderTitle.textContent = title;
+  sbMode               = "videos";
+  sbCurrentUrl         = href;
+  sbNextPageUrl        = null;
+  sbInSearch           = false;
+  VIDEOS               = [];
+  currentPlaylistTitle = title;
   videoList.innerHTML = `<li style="grid-column:1/-1;padding:2rem 1rem;color:var(--text-muted);font-size:.85rem;text-align:center;">Loading…</li>`;
+  renderBreadcrumbs();
   const items = await fetchSpankBang(href);
   VIDEOS = items;
   renderList();

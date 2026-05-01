@@ -6,113 +6,105 @@
   <title>Videx</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body class="left-nav-collapsed">
+<body>
 
-  <!-- Mobile nav backdrop -->
-  <div class="nav-backdrop" id="navBackdrop"></div>
-
-  <!-- Left navigation sidebar -->
-  <nav class="left-nav collapsed" id="leftNav">
-    <div class="left-nav-header">
-      <span class="left-nav-logo">Videx</span>
-      <button class="nav-close-btn" id="navCloseBtn" aria-label="Close navigation">&#10005;</button>
-    </div>
-
-    <div class="left-nav-sources">
-      <button class="source-btn active" data-source="porntubeai">PorntubeAI</button>
-      <button class="source-btn" data-source="pmvhaven">PMV Haven</button>
-      <button class="source-btn" data-source="spankbang">SpankBang</button>
-    </div>
-
-    <div class="nav-divider"></div>
-
-    <!-- SpankBang search -->
-    <div class="sb-search-bar hidden" id="sbSearchBar">
-      <input type="text" id="sbSearchInput" placeholder="Search SpankBang…" autocomplete="off" />
-      <button id="sbSearchBtn" aria-label="Search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-      </button>
+  <!-- Top navigation bar -->
+  <nav class="top-nav" id="topNav">
+    <div class="breadcrumbs" id="breadcrumbs"></div>
+    <div class="nav-actions">
+      <div class="nav-search hidden" id="navSearch">
+        <input type="text" id="sbSearchInput" placeholder="Search SpankBang…" autocomplete="off" />
+        <button id="sbSearchBtn" aria-label="Search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </button>
+      </div>
     </div>
   </nav>
 
-  <!-- Mobile hamburger -->
-  <button class="menu-btn" id="menuBtn" aria-label="Open navigation">
-    <span></span><span></span><span></span>
-  </button>
+  <!-- Content: main area + right sidebar -->
+  <div class="content-row">
 
-  <!-- Main content area -->
-  <div class="main-area">
+    <div class="main-area">
 
-    <!-- Browse view: video grid -->
-    <div class="browse-view" id="browseView">
-      <!-- Breadcrumb header (shown when drilling into a SB playlist) -->
-      <div class="browse-header hidden" id="browseHeader">
-        <button class="browse-back-btn" id="sbBackBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-          Playlists
-        </button>
-        <span class="browse-header-title" id="browseHeaderTitle"></span>
-      </div>
-      <ul class="video-grid" id="videoList"></ul>
-    </div>
-
-    <!-- Player view (hidden until video is clicked) -->
-    <div class="player-view hidden" id="playerView">
-      <div class="player-wrapper">
-        <video id="mainPlayer" class="main-video" playsinline preload="metadata"></video>
-        <div class="player-placeholder" id="playerPlaceholder">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <polygon points="5,3 19,12 5,21"/>
-          </svg>
-          <p>Select a video to play</p>
-        </div>
-        <!-- Top info overlay -->
-        <div class="video-overlay video-overlay-top" id="videoOverlay">
-          <a class="video-title" id="videoTitle" target="_blank" rel="noopener noreferrer"></a>
-          <div class="video-stats">
-            <span id="videoViews"></span>
-            <span id="videoDuration"></span>
-            <span id="videoDescription"></span>
-            <span id="videoDate"></span>
+      <!-- Home view: source picker -->
+      <div class="home-view" id="homeView">
+        <p class="home-subtitle">Choose a source</p>
+        <div class="source-grid">
+          <div class="source-card" data-source="porntubeai">
+            <div class="source-card-name">PorntubeAI</div>
+            <div class="source-card-desc">AI-curated videos</div>
+          </div>
+          <div class="source-card" data-source="pmvhaven">
+            <div class="source-card-name">PMV Haven</div>
+            <div class="source-card-desc">Porn music videos</div>
+          </div>
+          <div class="source-card" data-source="spankbang">
+            <div class="source-card-name">SpankBang</div>
+            <div class="source-card-desc">Personal playlists</div>
           </div>
         </div>
-        <!-- Back button: top-left of player -->
-        <button class="player-back-btn" id="backBtn" aria-label="Back to browse">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-        <!-- Bottom nav overlay -->
-        <div class="video-overlay video-overlay-bottom">
-          <button class="nav-btn" id="prevBtn" aria-label="Previous video">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-          </button>
-          <button class="nav-btn" id="nextBtn" aria-label="Next video">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </button>
+      </div>
+
+      <!-- Browse view: playlist cards + video grid -->
+      <div class="browse-view hidden" id="browseView">
+        <ul class="video-grid" id="videoList"></ul>
+      </div>
+
+      <!-- Player view (hidden until video is clicked) -->
+      <div class="player-view hidden" id="playerView">
+        <div class="player-wrapper">
+          <video id="mainPlayer" class="main-video" playsinline preload="metadata"></video>
+          <div class="player-placeholder" id="playerPlaceholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <polygon points="5,3 19,12 5,21"/>
+            </svg>
+            <p>Select a video to play</p>
+          </div>
+          <!-- Top info overlay -->
+          <div class="video-overlay video-overlay-top" id="videoOverlay">
+            <a class="video-title" id="videoTitle" target="_blank" rel="noopener noreferrer"></a>
+            <div class="video-stats">
+              <span id="videoViews"></span>
+              <span id="videoDuration"></span>
+              <span id="videoDescription"></span>
+              <span id="videoDate"></span>
+            </div>
+          </div>
+          <!-- Bottom nav overlay -->
+          <div class="video-overlay video-overlay-bottom">
+            <button class="nav-btn" id="prevBtn" aria-label="Previous video">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button class="nav-btn" id="nextBtn" aria-label="Next video">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
 
-  </div>
+    </div><!-- /main-area -->
 
-  <!-- Right sidebar: tabbed playlist + related (shown when video is playing) -->
-  <aside class="right-sidebar hidden" id="rightSidebar">
-    <div class="right-sidebar-header">
-      <button class="sidebar-tab active" data-tab="playlist">Playlist</button>
-      <button class="sidebar-tab" data-tab="related-videos">Videos</button>
-      <button class="sidebar-tab" data-tab="related-playlists">Playlists</button>
-      <button class="right-sidebar-close" id="rightSidebarClose" aria-label="Close">&#10005;</button>
-    </div>
-    <ul class="sidebar-list active" id="playlistList" data-tab="playlist"></ul>
-    <ul class="sidebar-list" id="relatedVideosList" data-tab="related-videos"></ul>
-    <ul class="sidebar-list" id="relatedPlaylistsList" data-tab="related-playlists"></ul>
-  </aside>
+    <!-- Right sidebar: tabbed playlist + related (shown when video is playing) -->
+    <aside class="right-sidebar hidden" id="rightSidebar">
+      <div class="right-sidebar-header">
+        <button class="sidebar-tab active" data-tab="playlist">Playlist</button>
+        <button class="sidebar-tab" data-tab="related-videos">Videos</button>
+        <button class="sidebar-tab" data-tab="related-playlists">Playlists</button>
+        <button class="right-sidebar-close" id="rightSidebarClose" aria-label="Close">&#10005;</button>
+      </div>
+      <ul class="sidebar-list active" id="playlistList" data-tab="playlist"></ul>
+      <ul class="sidebar-list" id="relatedVideosList" data-tab="related-videos"></ul>
+      <ul class="sidebar-list" id="relatedPlaylistsList" data-tab="related-playlists"></ul>
+    </aside>
 
-  <!-- Right sidebar re-open tab (visible when sidebar is hidden during playback) -->
-  <button class="sidebar-show-btn hidden" id="sidebarShowBtn" aria-label="Show sidebar">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-  </button>
+    <!-- Right sidebar re-open tab -->
+    <button class="sidebar-show-btn hidden" id="sidebarShowBtn" aria-label="Show sidebar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+
+  </div><!-- /content-row -->
 
   <!-- Progress bar -->
   <div class="progress-bar" id="progressBar">
