@@ -215,6 +215,196 @@ body {
   color: var(--text-muted);
 }
 
+/* ─── Home: grid profile cards ─────────────────────────────────────── */
+.grid-profile-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 560px;
+}
+
+/* ─── Home: grid view card ──────────────────────────────────────────── */
+.home-divider {
+  width: 100%;
+  max-width: 560px;
+  height: 1px;
+  background: var(--border);
+  opacity: 0.5;
+}
+
+.grid-view-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  width: 100%;
+  max-width: 560px;
+  transition: background var(--transition), border-color var(--transition), transform var(--transition);
+}
+.grid-view-card:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-dim);
+  transform: translateY(-2px);
+}
+.grid-view-card-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.grid-view-card-icon svg { width: 28px; height: 28px; }
+.grid-view-card-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.grid-view-card-desc {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
+/* ─── Grid view (3-column layout) ──────────────────────────────────── */
+.grid-view {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.grid-cols {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+.grid-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid var(--border);
+}
+.grid-col:last-child { border-right: none; }
+
+.grid-col-header {
+  height: 34px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.grid-player-wrapper {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  background: #000;
+  overflow: hidden;
+}
+
+.grid-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.grid-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  opacity: 0;
+  transition: opacity var(--transition);
+  pointer-events: none;
+}
+.grid-player-wrapper:hover .grid-overlay { opacity: 1; }
+
+.grid-overlay-top {
+  top: 0;
+  padding: 0.5rem 0.75rem 2.5rem;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%);
+}
+
+.grid-video-title {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-decoration: none;
+  pointer-events: auto;
+}
+
+.grid-overlay-bottom {
+  bottom: 0;
+  padding: 2.5rem 0.6rem 0.6rem;
+  background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  pointer-events: all;
+}
+
+.grid-nav-btn {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: background var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  pointer-events: auto;
+}
+.grid-nav-btn svg { width: 16px; height: 16px; }
+.grid-nav-btn:hover { background: rgba(255,255,255,0.28); }
+.grid-nav-btn:disabled { opacity: 0.3; cursor: default; }
+
+.grid-progress-bar {
+  height: 3px;
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.08);
+  cursor: pointer;
+  transition: height 0.15s ease;
+}
+.grid-progress-bar:hover { height: 5px; }
+.grid-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width 0.25s linear;
+  pointer-events: none;
+}
+
 /* ─── Browse view ───────────────────────────────────────────────────── */
 .browse-view {
   flex: 1;

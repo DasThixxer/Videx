@@ -45,6 +45,8 @@
             <div class="source-card-desc">Personal playlists</div>
           </div>
         </div>
+        <div class="home-divider"></div>
+        <div id="gridProfileCards" class="grid-profile-cards"></div>
       </div>
 
       <!-- Browse view: playlist cards + video grid -->
@@ -77,12 +79,91 @@
             <button class="nav-btn" id="prevBtn" aria-label="Previous video">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
+            <button class="nav-btn" id="seekBackBtn" aria-label="Seek back 1/10">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg>
+            </button>
+            <button class="nav-btn" id="seekForwardBtn" aria-label="Seek forward 1/10">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.49-4.5"/></svg>
+            </button>
             <button class="nav-btn" id="nextBtn" aria-label="Next video">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
             </button>
           </div>
         </div>
       </div>
+
+      <!-- Grid view: 3-column parallel players -->
+      <div class="grid-view hidden" id="gridView">
+
+        <div class="grid-cols">
+        <!-- Column 0: PorntubeAI -->
+        <div class="grid-col">
+          <div class="grid-col-header" id="gridHeader0"></div>
+          <div class="grid-player-wrapper">
+            <video id="gridPlayer0" class="grid-video" playsinline preload="metadata" muted></video>
+            <div class="grid-overlay grid-overlay-top">
+              <a class="grid-video-title" id="gridTitle0" target="_blank" rel="noopener noreferrer"></a>
+            </div>
+            <div class="grid-overlay grid-overlay-bottom">
+              <button class="grid-nav-btn" id="gridPrev0" aria-label="Previous video">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <button class="grid-nav-btn" id="gridNext0" aria-label="Next video">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="grid-progress-bar" id="gridProgressBar0">
+            <div class="grid-progress-fill" id="gridProgressFill0"></div>
+          </div>
+        </div>
+
+        <!-- Column 1: SpankBang -->
+        <div class="grid-col">
+          <div class="grid-col-header" id="gridHeader1"></div>
+          <div class="grid-player-wrapper">
+            <video id="gridPlayer1" class="grid-video" playsinline preload="metadata"></video>
+            <div class="grid-overlay grid-overlay-top">
+              <a class="grid-video-title" id="gridTitle1" target="_blank" rel="noopener noreferrer"></a>
+            </div>
+            <div class="grid-overlay grid-overlay-bottom">
+              <button class="grid-nav-btn" id="gridPrev1" aria-label="Previous video">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <button class="grid-nav-btn" id="gridNext1" aria-label="Next video">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="grid-progress-bar" id="gridProgressBar1">
+            <div class="grid-progress-fill" id="gridProgressFill1"></div>
+          </div>
+        </div>
+
+        <!-- Column 2: PMV Haven -->
+        <div class="grid-col">
+          <div class="grid-col-header" id="gridHeader2"></div>
+          <div class="grid-player-wrapper">
+            <video id="gridPlayer2" class="grid-video" playsinline preload="metadata" muted></video>
+            <div class="grid-overlay grid-overlay-top">
+              <a class="grid-video-title" id="gridTitle2" target="_blank" rel="noopener noreferrer"></a>
+            </div>
+            <div class="grid-overlay grid-overlay-bottom">
+              <button class="grid-nav-btn" id="gridPrev2" aria-label="Previous video">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <button class="grid-nav-btn" id="gridNext2" aria-label="Next video">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="grid-progress-bar" id="gridProgressBar2">
+            <div class="grid-progress-fill" id="gridProgressFill2"></div>
+          </div>
+        </div>
+
+        </div><!-- /grid-cols -->
+      </div><!-- /grid-view -->
 
     </div><!-- /main-area -->
 
@@ -113,6 +194,7 @@
 
   <script src="spankbang.js"></script>
   <script src="pmvhaven.js"></script>
+  <script src="grid.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

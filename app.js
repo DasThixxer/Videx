@@ -29,7 +29,6 @@ let sbInSearch    = false;
 
 let currentPage    = 1;
 let apiLoadingMore = false;
-let restoringHistory = false;
 
 // ─── DOM refs ────────────────────────────────────────────────────────────────
 const homeView         = document.getElementById("homeView");
@@ -52,17 +51,21 @@ const videoDuration    = document.getElementById("videoDuration");
 const videoDescription = document.getElementById("videoDescription");
 const prevBtn          = document.getElementById("prevBtn");
 const nextBtn          = document.getElementById("nextBtn");
+const seekBackBtn      = document.getElementById("seekBackBtn");
+const seekForwardBtn   = document.getElementById("seekForwardBtn");
 const rightSidebar     = document.getElementById("rightSidebar");
 const rightSidebarClose = document.getElementById("rightSidebarClose");
 const sidebarShowBtn   = document.getElementById("sidebarShowBtn");
 const relatedVideosList    = document.getElementById("relatedVideosList");
 const relatedPlaylistsList = document.getElementById("relatedPlaylistsList");
+const gridView         = document.getElementById("gridView");
 
 // ─── Breadcrumbs ──────────────────────────────────────────────────────────────
 const SOURCE_NAMES = { porntubeai: "PorntubeAI", pmvhaven: "PMV Haven", spankbang: "SpankBang" };
 
 function renderBreadcrumbs() {
   const isHome    = !homeView.classList.contains("hidden");
+  const isGrid    = !gridView.classList.contains("hidden");
   const isPlaying = !playerView.classList.contains("hidden");
   const inVideos  = currentSource === "spankbang" ? sbMode === "videos" : apiMode === "videos";
   const srcName   = SOURCE_NAMES[currentSource] || currentSource;
@@ -71,6 +74,10 @@ function renderBreadcrumbs() {
 
   if (isHome) {
     html = `<span class="crumb logo active">Videx</span>`;
+  } else if (isGrid) {
+    html = `<button class="crumb logo" id="crumb0">Videx</button>
+            <span class="crumb-sep">›</span>
+            <span class="crumb active">Grid View</span>`;
   } else if (!inVideos && !isPlaying) {
     html = `<button class="crumb logo" id="crumb0">Videx</button>
             <span class="crumb-sep">›</span>
@@ -102,8 +109,11 @@ function showHomeView() {
   mainPlayer.src = "";
   mainPlayer.load();
   progressFill.style.width = "0%";
+  progressBar.classList.remove("hidden");
   playerView.classList.add("hidden");
   browseView.classList.add("hidden");
+  gridView.classList.add("hidden");
+  stopGridLanes();
   rightSidebar.classList.add("hidden");
   sidebarShowBtn.classList.add("hidden");
   homeView.classList.remove("hidden");
@@ -119,8 +129,34 @@ function showHomeView() {
 
 function goHome() {
   showHomeView();
-  if (!restoringHistory) history.pushState(null, "", "?");
   renderBreadcrumbs();
+}
+
+// ─── Grid view ────────────────────────────────────────────────────────────────
+function renderHomeGridProfiles() {
+  const container = document.getElementById("gridProfileCards");
+  container.innerHTML = "";
+  const svgIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="9" height="18" rx="1"/><rect x="13" y="3" width="9" height="18" rx="1"/></svg>`;
+  GRID_PROFILES.forEach((p, i) => {
+    const card = document.createElement("div");
+    card.className = "grid-view-card";
+    card.innerHTML = `<div class="grid-view-card-icon">${svgIcon}</div><div><div class="grid-view-card-name">Grid · ${p.name}</div><div class="grid-view-card-desc">${p.lanes.map(l => l.label.split(" · ")[0]).join(" / ")}</div></div>`;
+    card.addEventListener("click", () => showGridView(i));
+    container.appendChild(card);
+  });
+}
+
+function showGridView(profileIndex = 0) {
+  homeView.classList.add("hidden");
+  browseView.classList.add("hidden");
+  playerView.classList.add("hidden");
+  rightSidebar.classList.add("hidden");
+  sidebarShowBtn.classList.add("hidden");
+  navSearch.classList.add("hidden");
+  progressBar.classList.add("hidden");
+  gridView.classList.remove("hidden");
+  renderBreadcrumbs();
+  startGridProfile(GRID_PROFILES[profileIndex]);
 }
 
 // ─── Source switching ─────────────────────────────────────────────────────────
@@ -140,7 +176,6 @@ async function switchToSource(source) {
   browseView.classList.remove("hidden");
   navSearch.classList.toggle("hidden", source !== "spankbang");
 
-  if (!restoringHistory) history.pushState(null, "", "?source=" + source);
   renderBreadcrumbs();
   await loadSource();
 }
@@ -170,11 +205,9 @@ function goToSource() {
     sbInSearch    = false;
     sbNextPageUrl = null;
     renderPlaylists();
-    if (!restoringHistory) history.pushState(null, "", "?source=spankbang");
   } else {
     apiMode = "playlists";
     renderApiPlaylists();
-    if (!restoringHistory) history.pushState(null, "", "?source=" + currentSource);
   }
   renderBreadcrumbs();
 }
@@ -272,7 +305,6 @@ async function openApiPlaylist(sortId, title) {
   renderBreadcrumbs();
   VIDEOS = await fetchVideos(1);
   renderList();
-  if (!restoringHistory) history.pushState(null, "", "?source=" + currentSource + "&playlist=" + encodeURIComponent(sortId));
 }
 
 // ─── Back to playlists (used by history restoration) ─────────────────────────
@@ -285,11 +317,9 @@ function goBackToPlaylists() {
     sbInSearch    = false;
     sbNextPageUrl = null;
     renderPlaylists();
-    if (!restoringHistory) history.pushState(null, "", "?source=spankbang");
   } else {
     apiMode = "playlists";
     renderApiPlaylists();
-    if (!restoringHistory) history.pushState(null, "", "?source=" + currentSource);
   }
   renderBreadcrumbs();
 }
@@ -475,12 +505,6 @@ async function loadVideo(id) {
 
   prevBtn.disabled = v.id <= 1;
   nextBtn.disabled = currentSource === "spankbang" && v.id >= VIDEOS.length;
-  let plParam = "";
-  if (currentSource === "spankbang" && sbCurrentUrl !== SB_PLAYLISTS_URL)
-    plParam = "&playlist=" + encodeURIComponent(sbCurrentUrl);
-  else if (currentSource !== "spankbang" && apiMode === "videos")
-    plParam = "&playlist=" + encodeURIComponent(currentSort);
-  if (!restoringHistory) history.pushState(null, "", "?source=" + currentSource + "&v=" + encodeURIComponent(v.src) + plParam);
 
   syncActiveItems();
 
@@ -491,6 +515,16 @@ async function loadVideo(id) {
 }
 
 prevBtn.addEventListener("click", () => { if (currentId > 1) loadVideo(currentId - 1); });
+seekBackBtn.addEventListener("click", () => {
+  console.log("[seek] back clicked, duration:", mainPlayer.duration, "currentTime:", mainPlayer.currentTime);
+  if (!mainPlayer.duration) return;
+  mainPlayer.currentTime = Math.max(0, mainPlayer.currentTime - mainPlayer.duration / 10);
+});
+seekForwardBtn.addEventListener("click", () => {
+  console.log("[seek] forward clicked, duration:", mainPlayer.duration, "currentTime:", mainPlayer.currentTime);
+  if (!mainPlayer.duration) return;
+  mainPlayer.currentTime = Math.min(mainPlayer.duration, mainPlayer.currentTime + mainPlayer.duration / 10);
+});
 nextBtn.addEventListener("click", () => {
   if (currentId < VIDEOS.length) {
     loadVideo(currentId + 1);
@@ -528,177 +562,10 @@ mainPlayer.addEventListener("wheel", (e) => {
     Math.max(0, mainPlayer.currentTime + (e.deltaY > 0 ? step : -step)));
 }, { passive: false });
 
-// ─── Restore UI from current URL (used by init and popstate) ─────────────────
-async function restoreFromUrl() {
-  const params        = new URLSearchParams(location.search);
-  const sourceParam   = params.get("source");
-  const newSource     = ["porntubeai", "pmvhaven", "spankbang"].includes(sourceParam)
-    ? sourceParam : null;
-  const savedVideo    = params.get("v") || null;
-  const savedPlaylist = params.get("playlist") || null;
-
-  if (!newSource) {
-    showHomeView();
-    renderBreadcrumbs();
-    return;
-  }
-
-  // ── Switch source if it changed ────────────────────────────────────────────
-  if (newSource !== currentSource) {
-    currentSource        = newSource;
-    currentId            = null;
-    currentPlaylistTitle = "";
-    sbCurrentUrl         = SB_PLAYLISTS_URL;
-    sbNextPageUrl        = null;
-    sbInSearch           = false;
-    sbMode               = "playlists";
-    SB_PLAYLISTS         = [];
-    VIDEOS               = [];
-    apiMode              = "playlists";
-    navSearch.classList.toggle("hidden", newSource !== "spankbang");
-    homeView.classList.add("hidden");
-    browseView.classList.remove("hidden");
-    if (!playerView.classList.contains("hidden")) {
-      playerView.classList.add("hidden");
-      rightSidebar.classList.add("hidden");
-      browseView.classList.remove("hidden");
-      mainPlayer.pause();
-      currentId = null;
-    }
-    await loadSource();
-  }
-
-  // ── No video in URL → close player, show playlist or source home ───────────
-  if (!savedVideo) {
-    if (!playerView.classList.contains("hidden")) {
-      playerView.classList.add("hidden");
-      rightSidebar.classList.add("hidden");
-      browseView.classList.remove("hidden");
-      mainPlayer.pause();
-      currentId = null;
-      relatedVideosList.innerHTML    = "";
-      relatedPlaylistsList.innerHTML = "";
-      switchSidebarTab("playlist");
-    }
-    if (savedPlaylist) {
-      if (newSource === "spankbang") {
-        if (sbCurrentUrl !== savedPlaylist || sbMode !== "videos") {
-          const title = savedPlaylist.replace(/\/$/, "").split("/").pop().replace(/-/g, " ");
-          await openPlaylist(savedPlaylist, title);
-        }
-      } else {
-        if (currentSort !== savedPlaylist || apiMode !== "videos") {
-          const playlists = newSource === "pmvhaven" ? PMVH_PLAYLISTS : API_PLAYLISTS;
-          const pl = playlists.find((p) => p.id === savedPlaylist);
-          if (pl) await openApiPlaylist(pl.id, pl.title);
-        }
-      }
-    } else {
-      if (newSource === "spankbang" && sbMode !== "playlists") {
-        sbMode        = "playlists";
-        sbInSearch    = false;
-        sbNextPageUrl = null;
-        sbCurrentUrl  = SB_PLAYLISTS_URL;
-        currentPlaylistTitle = "";
-        if (SB_PLAYLISTS.length === 0) SB_PLAYLISTS = await fetchSbPlaylists(SB_PLAYLISTS_URL);
-        renderPlaylists();
-      } else if (newSource !== "spankbang" && apiMode !== "playlists") {
-        apiMode = "playlists";
-        currentPlaylistTitle = "";
-        renderApiPlaylists();
-      }
-    }
-    renderBreadcrumbs();
-    return;
-  }
-
-  // ── Video in URL ────────────────────────────────────────────────────────────
-  const existingMatch = VIDEOS.find((v) => v.src === savedVideo);
-  if (existingMatch) {
-    loadVideo(existingMatch.id);
-    renderBreadcrumbs();
-    return;
-  }
-
-  if (newSource === "spankbang") {
-    const playProm = playExternalVideo({ src: savedVideo, title: "", thumb: "" });
-
-    if (savedPlaylist && (sbCurrentUrl !== savedPlaylist || sbMode !== "videos")) {
-      const title = savedPlaylist.replace(/\/$/, "").split("/").pop().replace(/-/g, " ");
-      await openPlaylist(savedPlaylist, title);
-    }
-
-    await playProm;
-
-    const match = VIDEOS.find((v) => v.src === savedVideo);
-    if (match) {
-      currentId        = match.id;
-      prevBtn.disabled = match.id <= 1;
-      nextBtn.disabled = match.id >= VIDEOS.length;
-    }
-  } else {
-    playDirectApiVideo(savedVideo);
-
-    if (savedPlaylist) {
-      const playlists = newSource === "pmvhaven" ? PMVH_PLAYLISTS : API_PLAYLISTS;
-      const pl = playlists.find((p) => p.id === savedPlaylist);
-      if (pl && (currentSort !== savedPlaylist || apiMode !== "videos")) {
-        await openApiPlaylist(pl.id, pl.title);
-      }
-    }
-
-    const match = VIDEOS.find((v) => v.src === savedVideo);
-    if (match) {
-      currentId                    = match.id;
-      videoTitle.textContent       = match.title;
-      videoTitle.href              = match.src;
-      videoViews.textContent       = match.views ? `${match.views} views` : "";
-      videoDuration.textContent    = match.duration;
-      videoDescription.textContent = match.uploader ? `by ${match.uploader}` : "";
-      prevBtn.disabled             = match.id <= 1;
-      nextBtn.disabled             = false;
-    }
-  }
-
-  if (currentId !== null) {
-    syncActiveItems();
-    const activePl = playlistList.querySelector(".playlist-item.active");
-    if (activePl) activePl.scrollIntoView({ block: "nearest" });
-  }
-
-  renderBreadcrumbs();
-}
-
 // ─── Init ─────────────────────────────────────────────────────────────────────
-(async function init() {
-  restoringHistory = true;
-  const params      = new URLSearchParams(location.search);
-  const savedSource = ["porntubeai", "pmvhaven", "spankbang"].includes(params.get("source"))
-    ? params.get("source") : null;
-
-  if (!savedSource) {
-    showHomeView();
-    renderBreadcrumbs();
-    restoringHistory = false;
-    return;
-  }
-
-  currentSource = savedSource;
-  homeView.classList.add("hidden");
-  browseView.classList.remove("hidden");
-  navSearch.classList.toggle("hidden", savedSource !== "spankbang");
-
-  await loadSource();
-  await restoreFromUrl();
-  restoringHistory = false;
+(function init() {
+  initGridDOM();
+  renderHomeGridProfiles();
+  showHomeView();
+  renderBreadcrumbs();
 })();
-
-// ─── Browser history navigation ───────────────────────────────────────────────
-window.addEventListener("popstate", async () => {
-  restoringHistory = true;
-  try {
-    await restoreFromUrl();
-  } finally {
-    restoringHistory = false;
-  }
-});
