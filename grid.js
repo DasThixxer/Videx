@@ -1,5 +1,7 @@
-// ─── Grid profiles ────────────────────────────────────────────────────────────
-const GRID_PROFILES = [
+import { SOURCES, CORS_PROXY, SB_PLAYLISTS_URL } from "./config.js";
+import { fetchSbPlaylists, parseSpankBangVideoSrc } from "./spankbang.js";
+
+export const GRID_PROFILES = [
   {
     name: "Default",
     lanes: [
@@ -19,6 +21,7 @@ const GRID_PROFILES = [
 ];
 
 // ─── Lane runtime state ───────────────────────────────────────────────────────
+
 const gridLanes = [0, 1, 2].map(i => ({
   index:        i,
   source:       null,
@@ -40,8 +43,9 @@ const gridLanes = [0, 1, 2].map(i => ({
   headerEl:     null,
 }));
 
-// ─── Wire up DOM refs and event listeners (called once on init) ───────────────
-function initGridDOM() {
+// ─── Wire up DOM refs and event listeners ─────────────────────────────────────
+
+export function initGridDOM() {
   [0, 1, 2].forEach(i => {
     const lane = gridLanes[i];
     lane.player       = document.getElementById(`gridPlayer${i}`);
@@ -86,7 +90,8 @@ function initGridDOM() {
   });
 }
 
-// ─── Fetch helpers (parameterized — no global state side effects) ─────────────
+// ─── Fetch helpers ────────────────────────────────────────────────────────────
+
 async function fetchVideosForLane(source, sort, page, offset = 0) {
   try {
     const url = SOURCES[source] + sort + "&page=" + page;
@@ -110,12 +115,12 @@ async function fetchVideosForLane(source, sort, page, offset = 0) {
 
 async function fetchSbForLane(url, offset) {
   try {
-    const res   = await fetch(url);
-    const html  = await res.text();
-    const doc   = new DOMParser().parseFromString(html, "text/html");
-    const root  = doc.querySelector('[data-testid="main"]') ?? doc;
-    const nodes = root.querySelectorAll('[data-testid="video-item"]');
-    const nextEl = doc.querySelector(".pagination li.next a[href]");
+    const res        = await fetch(url);
+    const html       = await res.text();
+    const doc        = new DOMParser().parseFromString(html, "text/html");
+    const root       = doc.querySelector('[data-testid="main"]') ?? doc;
+    const nodes      = root.querySelectorAll('[data-testid="video-item"]');
+    const nextEl     = doc.querySelector(".pagination li.next a[href]");
     const nextPageUrl = nextEl
       ? new URL(nextEl.getAttribute("href"), "https://spankbang.com").href
       : null;
@@ -142,9 +147,10 @@ async function fetchSbForLane(url, offset) {
 }
 
 // ─── Load a video into a lane ─────────────────────────────────────────────────
+
 async function gridLoadVideo(laneIndex, id) {
   const lane = gridLanes[laneIndex];
-  const v = lane.videos.find(x => x.id === id);
+  const v    = lane.videos.find(x => x.id === id);
   if (!v) return;
   lane.currentId = id;
 
@@ -177,8 +183,9 @@ async function gridLoadVideo(laneIndex, id) {
 }
 
 // ─── Auto-advance to next video ───────────────────────────────────────────────
+
 async function gridAutoNext(laneIndex) {
-  const lane = gridLanes[laneIndex];
+  const lane   = gridLanes[laneIndex];
   if (!lane.enabled) return;
   const nextId = (lane.currentId || 0) + 1;
 
@@ -206,7 +213,8 @@ async function gridAutoNext(laneIndex) {
 }
 
 // ─── Stop all grid players ────────────────────────────────────────────────────
-function stopGridLanes() {
+
+export function stopGridLanes() {
   gridLanes.forEach(lane => {
     if (lane.player) {
       lane.player.pause();
@@ -217,13 +225,13 @@ function stopGridLanes() {
   });
 }
 
-// ─── Start a grid profile (loads all 3 lanes in parallel) ────────────────────
-async function startGridProfile(profile) {
+// ─── Start a grid profile ─────────────────────────────────────────────────────
+
+export async function startGridProfile(profile) {
   await Promise.all([0, 1, 2].map(async i => {
     const cfg  = profile.lanes[i];
     const lane = gridLanes[i];
 
-    // Reset lane state
     lane.source       = cfg.source;
     lane.sort         = cfg.sort;
     lane.enabled      = cfg.enabled !== false;
@@ -242,7 +250,7 @@ async function startGridProfile(profile) {
     lane.progressFill.style.width = "0%";
     lane.prevBtn.disabled = true;
     lane.nextBtn.disabled = true;
-    lane.headerEl.textContent = cfg.label;
+    lane.headerEl.textContent  = cfg.label;
     lane.headerEl.style.opacity = lane.enabled ? "" : "0.4";
 
     if (!lane.enabled) {

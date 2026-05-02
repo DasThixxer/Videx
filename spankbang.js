@@ -1,17 +1,40 @@
-// ─── SpankBang search ────────────────────────────────────────────────────────
+import { SB_PLAYLISTS_URL } from "./config.js";
+import { state } from "./state.js";
+import { makeGridCard, makePlaylistItem, renderList } from "./render.js";
+import { openPlayer, closePlayer, renderBreadcrumbs } from "./nav.js";
+
+const videoList            = document.getElementById("videoList");
+const playlistList         = document.getElementById("playlistList");
+const relatedVideosList    = document.getElementById("relatedVideosList");
+const relatedPlaylistsList = document.getElementById("relatedPlaylistsList");
+const sbSearchBtn          = document.getElementById("sbSearchBtn");
+const sbSearchInput        = document.getElementById("sbSearchInput");
+const mainPlayer           = document.getElementById("mainPlayer");
+const playerView           = document.getElementById("playerView");
+const placeholder          = document.getElementById("playerPlaceholder");
+const videoTitle           = document.getElementById("videoTitle");
+const videoViews           = document.getElementById("videoViews");
+const videoDate            = document.getElementById("videoDate");
+const videoDuration        = document.getElementById("videoDuration");
+const videoDescription     = document.getElementById("videoDescription");
+const prevBtn              = document.getElementById("prevBtn");
+const nextBtn              = document.getElementById("nextBtn");
+
+// ─── SpankBang search ─────────────────────────────────────────────────────────
+
 async function performSbSearch(query) {
   query = query.trim();
   if (!query) return;
-  sbInSearch           = true;
-  sbMode               = "videos";
-  sbNextPageUrl        = null;
-  VIDEOS               = [];
-  currentPlaylistTitle = `"${query}"`;
+  state.sbInSearch           = true;
+  state.sbMode               = "videos";
+  state.sbNextPageUrl        = null;
+  state.VIDEOS               = [];
+  state.currentPlaylistTitle = `"${query}"`;
   videoList.innerHTML = `<li style="grid-column:1/-1;padding:1.5rem 1rem;color:var(--text-muted);font-size:.85rem;text-align:center;">Searching…</li>`;
   renderBreadcrumbs();
-  const url   = `https://spankbang.com/s/${encodeURIComponent(query)}/`;
-  const items = await fetchSpankBang(url);
-  VIDEOS = items;
+  const url    = `https://spankbang.com/s/${encodeURIComponent(query)}/`;
+  const items  = await fetchSpankBang(url);
+  state.VIDEOS = items;
   renderList();
 }
 
@@ -20,8 +43,9 @@ sbSearchInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") performSbSearch(sbSearchInput.value);
 });
 
-// ─── SpankBang: fetch playlists from profile page ────────────────────────────
-async function fetchSbPlaylists(url) {
+// ─── Fetch playlists from profile page ───────────────────────────────────────
+
+export async function fetchSbPlaylists(url) {
   try {
     const res  = await fetch(url);
     const html = await res.text();
@@ -46,16 +70,17 @@ async function fetchSbPlaylists(url) {
   }
 }
 
-// ─── SpankBang: render playlists grid ────────────────────────────────────────
-function renderPlaylists() {
-  videoList.innerHTML = "";
+// ─── Render playlists grid ────────────────────────────────────────────────────
+
+export function renderPlaylists() {
+  videoList.innerHTML    = "";
   playlistList.innerHTML = "";
 
-  if (SB_PLAYLISTS.length === 0) {
+  if (state.SB_PLAYLISTS.length === 0) {
     videoList.innerHTML = `<li style="grid-column:1/-1;padding:2rem 1rem;color:var(--text-muted);font-size:.85rem;text-align:center;">No playlists found</li>`;
     return;
   }
-  SB_PLAYLISTS.forEach((pl) => {
+  state.SB_PLAYLISTS.forEach((pl) => {
     const li = document.createElement("li");
     li.className = "playlist-card";
     const coverClass = pl.imgs.length <= 1 ? "playlist-card-cover single" : "playlist-card-cover";
@@ -72,24 +97,26 @@ function renderPlaylists() {
   });
 }
 
-// ─── SpankBang: drill into a playlist ────────────────────────────────────────
-async function openPlaylist(href, title) {
-  sbMode               = "videos";
-  sbCurrentUrl         = href;
-  sbNextPageUrl        = null;
-  sbInSearch           = false;
-  VIDEOS               = [];
-  currentPlaylistTitle = title;
+// ─── Drill into a playlist ────────────────────────────────────────────────────
+
+export async function openPlaylist(href, title) {
+  state.sbMode               = "videos";
+  state.sbCurrentUrl         = href;
+  state.sbNextPageUrl        = null;
+  state.sbInSearch           = false;
+  state.VIDEOS               = [];
+  state.currentPlaylistTitle = title;
   videoList.innerHTML = `<li style="grid-column:1/-1;padding:2rem 1rem;color:var(--text-muted);font-size:.85rem;text-align:center;">Loading…</li>`;
   renderBreadcrumbs();
-  const items = await fetchSpankBang(href);
-  VIDEOS = items;
+  const items  = await fetchSpankBang(href);
+  state.VIDEOS = items;
   renderList();
-  if (!restoringHistory) history.pushState(null, "", "?source=spankbang&playlist=" + encodeURIComponent(href));
+  if (!state.restoringHistory) history.pushState(null, "", "?source=spankbang&playlist=" + encodeURIComponent(href));
 }
 
-// ─── SpankBang: fetch & scrape video list from playlist page ─────────────────
-async function fetchSpankBang(url, append = false) {
+// ─── Fetch & scrape video list from playlist page ─────────────────────────────
+
+export async function fetchSpankBang(url, append = false) {
   try {
     const res  = await fetch(url);
     const html = await res.text();
@@ -98,19 +125,18 @@ async function fetchSpankBang(url, append = false) {
     const root  = doc.querySelector('[data-testid="main"]') ?? doc;
     const nodes = root.querySelectorAll('[data-testid="video-item"]');
 
-    const nextEl  = doc.querySelector(".pagination li.next a[href]");
-    sbNextPageUrl = nextEl
+    const nextEl         = doc.querySelector(".pagination li.next a[href]");
+    state.sbNextPageUrl  = nextEl
       ? new URL(nextEl.getAttribute("href"), "https://spankbang.com").href
       : null;
 
-    const offset = append ? VIDEOS.length : 0;
+    const offset = append ? state.VIDEOS.length : 0;
     return Array.from(nodes).map((node, i) => {
       const a        = node.querySelector("a[href]");
       const titleA   = node.querySelector("a[title]");
       const img      = node.querySelector("img");
       const duration = node.querySelector("[data-testid='video-item-length']");
-      const src = a?.getAttribute("href") || "";
-
+      const src      = a?.getAttribute("href") || "";
       return {
         id:       offset + i + 1,
         title:    titleA?.getAttribute("title") || img?.getAttribute("alt") || "Video",
@@ -127,8 +153,9 @@ async function fetchSpankBang(url, append = false) {
   }
 }
 
-// ─── SpankBang: extract direct video URL from video page ─────────────────────
-function parseSpankBangVideoSrc(html) {
+// ─── Extract direct video URL from video page ─────────────────────────────────
+
+export function parseSpankBangVideoSrc(html) {
   const doc = new DOMParser().parseFromString(html, "text/html");
   const tag = doc.querySelector("video[src], video source[src]");
   if (tag) return tag.getAttribute("src");
@@ -142,8 +169,9 @@ function parseSpankBangVideoSrc(html) {
   return m ? m[0] : null;
 }
 
-// ─── SpankBang: scrape related videos from video page ────────────────────────
-function scrapeRelatedVideos(doc) {
+// ─── Scrape related videos from video page ────────────────────────────────────
+
+export function scrapeRelatedVideos(doc) {
   const nodes = doc.querySelectorAll(".js-related-videos-right [data-testid='video-item']");
   return Array.from(nodes).map((node) => {
     const a        = node.querySelector("a[href]");
@@ -160,8 +188,9 @@ function scrapeRelatedVideos(doc) {
   }).filter((v) => v.src.includes("/video/"));
 }
 
-// ─── SpankBang: scrape related playlists from video page ─────────────────────
-function scrapeRelatedPlaylists(doc) {
+// ─── Scrape related playlists from video page ─────────────────────────────────
+
+export function scrapeRelatedPlaylists(doc) {
   const nodes = doc.querySelectorAll(
     "a[data-testid='playlist-item'], a.playlist-item, [class*='playlist'] a[href*='/playlist/'], a[href*='/playlist/']"
   );
@@ -176,7 +205,8 @@ function scrapeRelatedPlaylists(doc) {
 }
 
 // ─── Render related videos in right sidebar ───────────────────────────────────
-function renderRelatedVideos(items) {
+
+export function renderRelatedVideos(items) {
   relatedVideosList.innerHTML = "";
   if (items.length === 0) {
     relatedVideosList.innerHTML = `<li class="sidebar-empty">None found</li>`;
@@ -199,7 +229,8 @@ function renderRelatedVideos(items) {
 }
 
 // ─── Render related playlists in right sidebar ────────────────────────────────
-function renderRelatedPlaylists(items) {
+
+export function renderRelatedPlaylists(items) {
   relatedPlaylistsList.innerHTML = "";
   if (items.length === 0) {
     relatedPlaylistsList.innerHTML = `<li class="sidebar-empty">None found</li>`;
@@ -223,7 +254,8 @@ function renderRelatedPlaylists(items) {
 }
 
 // ─── Play a related video (not in VIDEOS array) ───────────────────────────────
-async function playExternalVideo(v) {
+
+export async function playExternalVideo(v) {
   if (!v.src) return;
   const pageUrl = new URL(v.src, "https://spankbang.com").href;
   let html;
@@ -258,23 +290,24 @@ async function playExternalVideo(v) {
   videoDescription.textContent = "";
   videoDate.textContent        = "";
 
-  prevBtn.disabled = true;
-  nextBtn.disabled = true;
-  currentId = null;
-  const plParam2 = sbCurrentUrl !== SB_PLAYLISTS_URL
-    ? "&playlist=" + encodeURIComponent(sbCurrentUrl) : "";
-  if (!restoringHistory) history.pushState(null, "", "?source=spankbang&v=" + encodeURIComponent(v.src) + plParam2);
+  prevBtn.disabled    = true;
+  nextBtn.disabled    = true;
+  state.currentId     = null;
+  const plParam2 = state.sbCurrentUrl !== SB_PLAYLISTS_URL
+    ? "&playlist=" + encodeURIComponent(state.sbCurrentUrl) : "";
+  if (!state.restoringHistory) history.pushState(null, "", "?source=spankbang&v=" + encodeURIComponent(v.src) + plParam2);
   document.querySelectorAll(".playlist-item").forEach((el) => el.classList.remove("active"));
 }
 
-// ─── SpankBang: load more videos (infinite scroll) ───────────────────────────
-async function loadMoreSpankBang() {
-  sbLoadingMore = true;
-  const newItems = await fetchSpankBang(sbNextPageUrl, true);
-  VIDEOS.push(...newItems);
+// ─── Load more videos (infinite scroll) ──────────────────────────────────────
+
+export async function loadMoreSpankBang() {
+  state.sbLoadingMore = true;
+  const newItems = await fetchSpankBang(state.sbNextPageUrl, true);
+  state.VIDEOS.push(...newItems);
   newItems.forEach((v) => {
     videoList.appendChild(makeGridCard(v));
     playlistList.appendChild(makePlaylistItem(v));
   });
-  sbLoadingMore = false;
+  state.sbLoadingMore = false;
 }
