@@ -69,6 +69,7 @@ export function renderBreadcrumbs() {
 // ─── Home view ────────────────────────────────────────────────────────────────
 
 export function showHomeView() {
+  document.body.classList.remove("playing");
   mainPlayer.pause();
   mainPlayer.src = "";
   mainPlayer.load();
@@ -112,6 +113,7 @@ export function renderHomeGridProfiles() {
 }
 
 export function showGridView(profileIndex = 0) {
+  document.body.classList.remove("playing");
   homeView.classList.add("hidden");
   browseView.classList.add("hidden");
   playerView.classList.add("hidden");
@@ -127,6 +129,7 @@ export function showGridView(profileIndex = 0) {
 // ─── Player show / hide ───────────────────────────────────────────────────────
 
 export function openPlayer() {
+  document.body.classList.add("playing");
   browseView.classList.add("hidden");
   playerView.classList.remove("hidden");
   rightSidebar.classList.add("hidden");
@@ -137,6 +140,7 @@ export function openPlayer() {
 }
 
 export function closePlayer() {
+  document.body.classList.remove("playing");
   playerView.classList.add("hidden");
   rightSidebar.classList.add("hidden");
   sidebarShowBtn.classList.add("hidden");
@@ -184,6 +188,7 @@ export async function switchToSource(source) {
 }
 
 export function goToSource() {
+  document.body.classList.remove("playing");
   if (!playerView.classList.contains("hidden")) {
     mainPlayer.pause();
     playerView.classList.add("hidden");
