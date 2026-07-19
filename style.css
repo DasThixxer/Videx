@@ -18,9 +18,12 @@
 }
 
 html, body {
+  height: 100vh;        /* fallback for browsers without dvh */
   height: 100dvh;
   overflow: hidden;
   font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -30,20 +33,29 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  overscroll-behavior: none;              /* no pull-to-refresh / scroll chaining */
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ─── Hidden utility ────────────────────────────────────────────────── */
 .hidden { display: none !important; }
 
+/* Snappier taps: no 300ms delay, no double-tap zoom on interactive controls */
+button, a, .source-card, .grid-view-card, .video-card, .sort-card,
+.playlist-card, .playlist-item, .crumb, .progress-bar, .grid-progress-bar,
+.sidebar-tab { touch-action: manipulation; }
+
 /* ─── Top navigation bar ────────────────────────────────────────────── */
 .top-nav {
-  height: var(--top-nav-h);
+  height: calc(var(--top-nav-h) + env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
   flex-shrink: 0;
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
-  padding: 0 1rem;
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
   gap: 0.75rem;
   z-index: 100;
 }
@@ -170,6 +182,8 @@ body {
   padding: 2rem 1.5rem;
   gap: 1.25rem;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .home-subtitle {
@@ -409,6 +423,8 @@ body {
 .browse-view {
   flex: 1;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
 }
@@ -745,6 +761,8 @@ body {
   display: none;
   list-style: none;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   flex: 1;
   padding: 0.25rem 0;
   scrollbar-width: thin;
@@ -882,28 +900,89 @@ body {
 .sidebar-show-btn:hover { color: var(--text); background: var(--bg-hover); }
 .sidebar-show-btn svg { width: 12px; height: 12px; }
 
-/* ─── Mobile ────────────────────────────────────────────────────────── */
+/* ─── Touch devices (no hover pointer) ──────────────────────────────── */
+@media (hover: none) {
+  /* Grid overlays are hover-revealed on desktop; without a hover pointer
+     the nav buttons/titles would be unreachable, so keep them visible. */
+  .grid-overlay { opacity: 1; }
+
+  /* Stop :hover lift/colour states from sticking after a tap. */
+  .source-card:hover, .grid-view-card:hover, .video-card:hover,
+  .sort-card:hover, .playlist-card:hover {
+    transform: none;
+    background: var(--bg-card);
+    border-color: var(--border);
+  }
+  .video-card.active:hover { border-color: var(--accent); }
+
+  /* Comfortable touch targets (≈44px). */
+  .nav-btn { width: 44px; height: 44px; }
+  .grid-nav-btn { width: 44px; height: 44px; }
+  .grid-nav-btn svg { width: 18px; height: 18px; }
+
+  /* Fatter, easier-to-hit scrub bars with an extended tap zone. */
+  .progress-bar { height: 6px; }
+  .progress-bar::before {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 20px;
+  }
+  .grid-progress-bar { height: 6px; }
+}
+
+/* ─── Mobile layout ─────────────────────────────────────────────────── */
 @media (max-width: 600px) {
   .source-grid { grid-template-columns: 1fr; max-width: 320px; }
   .source-card { padding: 1.25rem 1rem; flex-direction: row; justify-content: flex-start; gap: 0.75rem; }
 
-  .nav-search input { width: 120px; }
+  /* iOS auto-zooms the page when focusing an input under 16px — pin to 16px. */
+  .nav-search input { width: 128px; height: 34px; font-size: 16px; }
 
   .right-sidebar {
     position: fixed;
-    top: var(--top-nav-h); right: 0; bottom: 0;
+    top: calc(var(--top-nav-h) + env(safe-area-inset-top));
+    right: 0; bottom: 0;
     width: min(var(--right-nav-w), 88vw);
+    padding-right: env(safe-area-inset-right);
     z-index: 200;
     transform: translateX(100%);
     transition: transform var(--transition);
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.4);
   }
   .right-sidebar:not(.hidden) { transform: translateX(0); }
 
+  /* Bigger re-open handle for touch, clear of the notch in landscape. */
+  .sidebar-show-btn {
+    width: 30px; height: 60px;
+    margin-right: env(safe-area-inset-right);
+  }
+  .sidebar-show-btn svg { width: 14px; height: 14px; }
+
   .video-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
     gap: 0.75rem;
     padding: 0.75rem;
   }
+
+  /* Grid view: stack the three lanes vertically and scroll instead of
+     cramming them into unusable side-by-side columns. */
+  .grid-cols {
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  .grid-col {
+    flex: none;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .grid-col:last-child { border-bottom: none; }
+  .grid-player-wrapper { flex: none; aspect-ratio: 16 / 9; }
+}
+
+/* ─── Small phones ──────────────────────────────────────────────────── */
+@media (max-width: 400px) {
+  .video-grid { grid-template-columns: 1fr 1fr; }
 }
 
 /* ─── Wider screens ─────────────────────────────────────────────────── */
