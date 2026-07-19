@@ -65,13 +65,14 @@ Different sources may require different proxies depending on Cloudflare WAF rule
 
 | Source | Proxy | Reason |
 |---|---|---|
-| All sources | `api.codetabs.com` | Free, no deployment needed, bypasses PMVHaven's Cloudflare WAF |
+| All sources | Val.town HTTP val (`proxies/val-proxy.js`) | Bypasses PMVHaven's Cloudflare WAF; slower than codetabs but reliably up |
 
 **Proxies that were tested and failed for PMVHaven:**
 - Vercel — 403 (Cloudflare JS challenge)
 - Netlify — 403 (UK geo-block on their edge nodes)
 - Cloudflare Workers — UK geo-block (PMVHaven blocks UK IPs site-wide)
 - Railway — works but requires paid plan after 30 days
-- `corsproxy.io` — works locally only (paid for non-localhost origins)
-- `allorigins.win` — works but very slow
-- Val.town — works but noticeably slow
+- `corsproxy.io` — works locally only (paid for non-localhost origins); also seen serving PMVHaven's SPA shell instead of the JSON API through its edge
+- `allorigins.win` — unreliable, frequent 522s (can't reach PMVHaven's origin)
+- `thingproxy.freeboard.io` — down entirely
+- `api.codetabs.com` — was in use, but the host now hangs indefinitely on every request (connects, never responds); replaced with Val.town
